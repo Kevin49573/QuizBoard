@@ -1,0 +1,2855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>🚀 QuizBoard</title>
+    <style>
+        /* ----- RESET & VARIABLES ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        :root {
+            --bg: #0b0d15;
+            --card-bg: #141824;
+            --neon-blue: #00d4ff;
+            --neon-purple: #a855f7;
+            --gold: #fbbf24;
+            --danger: #f87171;
+            --success: #34d399;
+            --text: #e2e8f0;
+            --dim: #94a3b8;
+            --nav-height: 60px;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px;
+            padding-bottom: calc(8px + var(--nav-height) + 8px);
+        }
+        #app {
+            max-width: 480px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 28px;
+            padding: 16px 14px 16px;
+            box-shadow: 0 0 50px rgba(168, 85, 247, 0.10);
+            border: 1px solid rgba(168, 85, 247, 0.12);
+            position: relative;
+            overflow: hidden;
+            min-height: 560px;
+            display: flex;
+            flex-direction: column;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .page {
+            flex: 1;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ----- BUTTONS ----- */
+        .btn {
+            background: var(--neon-purple);
+            border: none;
+            padding: 14px 18px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 16px;
+            color: #fff;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 18px rgba(168, 85, 247, 0.20);
+            letter-spacing: 0.3px;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-gold {
+            background: var(--gold);
+            color: #0b0d15;
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.20);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            box-shadow: none;
+            color: var(--neon-blue);
+        }
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 13px;
+            width: auto;
+        }
+        .btn-danger {
+            background: var(--danger);
+            box-shadow: 0 0 18px rgba(248, 113, 113, 0.15);
+        }
+        input,
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 60px;
+            border: 1px solid #2d3748;
+            background: #1e2538;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus,
+        select:focus {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+        }
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--dim);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .title {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .sub {
+            text-align: center;
+            color: var(--dim);
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+        .flex {
+            display: flex;
+            gap: 10px;
+        }
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .text-gold {
+            color: var(--gold);
+        }
+        .text-neon {
+            color: var(--neon-blue);
+        }
+        .text-dim {
+            color: var(--dim);
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-sm {
+            font-size: 13px;
+        }
+        .text-danger {
+            color: var(--danger);
+        }
+        .mt-1 {
+            margin-top: 8px;
+        }
+        .mt-2 {
+            margin-top: 14px;
+        }
+
+        /* ----- HEADER ----- */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 2px;
+        }
+        .app-header .brand {
+            font-weight: 800;
+            font-size: 20px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .app-header .sound-btn {
+            background: #1e2538;
+            border: 1px solid #2d3748;
+            border-radius: 60px;
+            padding: 4px 12px;
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        /* ----- AUTH ----- */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .auth-container .toggle-auth {
+            text-align: center;
+            font-size: 14px;
+            color: var(--dim);
+        }
+        .auth-container .toggle-auth span {
+            color: var(--neon-blue);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* ----- DASHBOARD ----- */
+        .profile-card {
+            background: #1e2538;
+            border-radius: 18px;
+            padding: 14px 16px;
+            border: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .profile-card .avatar {
+            font-size: 36px;
+            background: #0f131f;
+            width: 56px;
+            height: 56px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--neon-purple);
+            flex-shrink: 0;
+        }
+        .profile-card .info {
+            flex: 1;
+        }
+        .profile-card .info .name {
+            font-weight: 700;
+            font-size: 17px;
+        }
+        .profile-card .info .major {
+            font-size: 12px;
+            color: var(--dim);
+        }
+        .profile-card .rp {
+            text-align: right;
+        }
+        .profile-card .rp .label {
+            font-size: 10px;
+            color: var(--dim);
+            text-transform: uppercase;
+        }
+        .profile-card .rp .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin: 10px 0 14px;
+        }
+        .stat-card {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 10px 4px;
+            text-align: center;
+            border: 1px solid #2d3748;
+        }
+        .stat-card .num {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neon-blue);
+        }
+        .stat-card .lbl {
+            font-size: 9px;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-vertical-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 10px 0 8px;
+        }
+        .btn-vertical-group .btn {
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        /* ----- ROOM SETUP ----- */
+        .room-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .room-container .room-code-display {
+            background: #1e2538;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 2px dashed var(--neon-blue);
+        }
+        .room-container .room-code-display .code {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--neon-blue);
+            letter-spacing: 4px;
+        }
+        .room-container .room-code-display .label {
+            font-size: 12px;
+            color: var(--dim);
+        }
+        .room-container .player-list-room {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .room-container .player-list-room .player-chip {
+            background: #1e2538;
+            padding: 10px 14px;
+            border-radius: 60px;
+            border: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .room-container .player-list-room .player-chip .emoji {
+            font-size: 22px;
+        }
+        .room-container .player-list-room .player-chip .name {
+            font-weight: 600;
+        }
+        .room-container .player-list-room .player-chip .status {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--dim);
+        }
+        .room-container .player-list-room .player-chip .status.ready {
+            color: var(--success);
+        }
+
+        /* ----- SHOP ----- */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .shop-item {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 10px 6px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .shop-item .icon {
+            font-size: 26px;
+        }
+        .shop-item .name {
+            font-weight: 600;
+            font-size: 12px;
+            margin: 3px 0;
+        }
+        .shop-item .price {
+            color: var(--gold);
+            font-size: 11px;
+        }
+        .shop-item .count {
+            font-size: 11px;
+            color: var(--dim);
+        }
+
+        /* ----- PROFILE ----- */
+        .profile-avatar-edit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 8px 0 12px;
+        }
+        .profile-avatar-edit .big-avatar {
+            font-size: 72px;
+            background: #0f131f;
+            width: 100px;
+            height: 100px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--neon-purple);
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.10);
+        }
+        .profile-avatar-edit .big-avatar:active {
+            transform: scale(0.95);
+        }
+        .profile-avatar-edit .change-avatar-btn {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--neon-blue);
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            padding: 6px 18px;
+            border-radius: 60px;
+            cursor: pointer;
+        }
+        .profile-detail {
+            background: #1e2538;
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid #2d3748;
+            margin-bottom: 10px;
+        }
+        .profile-detail .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #2d3748;
+            font-size: 14px;
+            align-items: center;
+        }
+        .profile-detail .row:last-child {
+            border-bottom: none;
+        }
+        .profile-detail .row .label {
+            color: var(--dim);
+        }
+        .profile-detail .row .value {
+            font-weight: 600;
+        }
+        .profile-detail .row select {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 14px;
+            background: #0f131f;
+            border-radius: 60px;
+            border: 1px solid #2d3748;
+            color: #fff;
+        }
+        .friend-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .friend-chip {
+            background: #0f131f;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 13px;
+            border: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .friend-chip .remove-friend {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .add-friend-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .add-friend-input input {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 14px;
+            border-radius: 60px;
+            border: 1px solid #2d3748;
+            background: #0f131f;
+            color: #fff;
+        }
+        .add-friend-input button {
+            padding: 10px 18px;
+            border-radius: 60px;
+            background: var(--neon-purple);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ----- BOARD GAME ----- */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin: 10px 0 12px;
+            padding: 8px;
+            background: #0f131f;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+        }
+        .tile {
+            aspect-ratio: 1/1;
+            background: #1e2538;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--dim);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid transparent;
+            position: relative;
+            padding: 2px;
+            min-height: 44px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        .tile .tile-num {
+            font-size: 14px;
+            font-weight: 800;
+            color: #4a5568;
+            position: absolute;
+            top: 2px;
+            left: 4px;
+        }
+        .tile .pawn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2px;
+            font-size: 16px;
+            line-height: 1;
+            margin-top: 4px;
+        }
+        .tile .pawn-group .pawn {
+            font-size: 16px;
+            filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.10));
+            transition: all 0.3s;
+        }
+        .tile .pawn-group .pawn.active-pawn {
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+            transform: scale(1.25);
+            animation: pulse-pawn 0.7s ease infinite alternate;
+        }
+        @keyframes pulse-pawn {
+            from {
+                transform: scale(1.1);
+            }
+            to {
+                transform: scale(1.35);
+            }
+        }
+        .tile.gold {
+            background: #3d3400;
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.12);
+        }
+        .tile.purple {
+            background: #2d1045;
+            border-color: var(--neon-purple);
+            color: var(--neon-purple);
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.12);
+        }
+        .tile.mystery {
+            background: #1a3a3a;
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.12);
+        }
+        .tile.finish {
+            background: var(--gold);
+            color: #0b0d15;
+            border-color: var(--gold);
+            box-shadow: 0 0 24px rgba(251, 191, 36, 0.25);
+        }
+        .tile.finish .pawn-group .pawn {
+            color: #0b0d15;
+        }
+        .tile.landed {
+            animation: land-glow 0.5s ease;
+        }
+        @keyframes land-glow {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(0, 212, 255, 0);
+            }
+            50% {
+                transform: scale(1.06);
+                box-shadow: 0 0 24px rgba(0, 212, 255, 0.4);
+                border-color: var(--neon-blue);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(0, 212, 255, 0);
+            }
+        }
+
+        /* ----- TURN INDICATOR ----- */
+        .turn-indicator {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 8px 12px;
+            border: 1px solid #2d3748;
+            margin: 4px 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .turn-indicator .turn-label {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .turn-indicator .turn-label .highlight {
+            color: var(--gold);
+        }
+        .turn-indicator .player-stats {
+            display: flex;
+            gap: 6px;
+            font-size: 12px;
+        }
+        .turn-indicator .player-stats span {
+            background: #0f131f;
+            padding: 2px 8px;
+            border-radius: 60px;
+        }
+
+        /* ----- CARDS ----- */
+        .card-container-expanded {
+            margin: 8px 0 12px;
+        }
+        .card-container-expanded .card-slot {
+            perspective: 800px;
+            cursor: pointer;
+            width: 100%;
+            aspect-ratio: 3/2;
+            max-height: 340px;
+        }
+        .card-container-expanded .card-slot.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .card-container-expanded .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+            border-radius: 16px;
+        }
+        .card-container-expanded .card-slot.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-container-expanded .card-front,
+        .card-container-expanded .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 18px;
+            border: 2px solid #2d3748;
+            background: #1e2538;
+        }
+        .card-container-expanded .card-front {
+            background: linear-gradient(145deg, #1e2538, #141824);
+            border-color: var(--neon-purple);
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 30px rgba(168, 85, 247, 0.06);
+        }
+        .card-container-expanded .card-front .big-q {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--neon-purple);
+            opacity: 0.4;
+        }
+        .card-container-expanded .card-front .lock-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        .card-container-expanded .card-back {
+            transform: rotateY(180deg);
+            background: #111827;
+            border-color: var(--neon-blue);
+            overflow-y: auto;
+            justify-content: flex-start;
+            align-items: stretch;
+        }
+        .card-container-expanded .card-back .q-level {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 2px 12px;
+            border-radius: 60px;
+            background: #2d3748;
+            align-self: flex-start;
+            margin-bottom: 6px;
+        }
+        .card-container-expanded .card-back .q-text {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .card-container-expanded .card-back .q-options {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .card-container-expanded .card-back .q-options button {
+            background: #1e2538;
+            border: 1px solid #2d3748;
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.15s;
+            width: 100%;
+        }
+        .card-container-expanded .card-back .q-options button:active {
+            background: var(--neon-purple);
+            border-color: var(--neon-purple);
+        }
+        .card-container-expanded .card-back .q-options button.correct-glow {
+            background: var(--success);
+            border-color: var(--success);
+            color: #0b0d15;
+        }
+        .card-container-expanded .card-back .q-options button.wrong-glow {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+        .card-container-expanded .card-back .wager-area {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .card-container-expanded .card-back .wager-area button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 60px;
+            border: 2px solid var(--gold);
+            background: transparent;
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .card-container-expanded .card-back .wager-area button.active {
+            background: var(--gold);
+            color: #0b0d15;
+        }
+
+        /* ----- TIMER & DICE ----- */
+        .timer-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0 6px;
+        }
+        .timer-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: #1e2538;
+            border-radius: 60px;
+            overflow: hidden;
+            border: 1px solid #2d3748;
+        }
+        .timer-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
+            border-radius: 60px;
+            transition: width 1s linear;
+        }
+        .timer-text {
+            font-weight: 700;
+            font-size: 18px;
+            min-width: 42px;
+            text-align: center;
+            color: var(--neon-blue);
+            font-variant-numeric: tabular-nums;
+        }
+        .dice-result {
+            font-size: 28px;
+            text-align: center;
+            padding: 4px;
+            min-height: 44px;
+            font-weight: 800;
+            color: var(--gold);
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .dice-result.rolling {
+            animation: dice-roll 0.12s steps(1) infinite alternate;
+        }
+        @keyframes dice-roll {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            100% {
+                transform: rotate(6deg) scale(1.06);
+            }
+        }
+
+        /* ----- RESULT ----- */
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 10px 0;
+        }
+        .result-card {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 10px;
+            border: 1px solid #2d3748;
+            text-align: center;
+        }
+        .result-card.winner {
+            border-color: var(--gold);
+            background: #2d3400;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.10);
+        }
+        .result-card .r-name {
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .result-card .r-rp {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .result-card .r-stats {
+            font-size: 11px;
+            color: var(--dim);
+            margin-top: 3px;
+        }
+        .result-card .r-pos {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .winner-badge {
+            display: inline-block;
+            background: var(--gold);
+            color: #0b0d15;
+            padding: 2px 10px;
+            border-radius: 60px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        /* ----- REVIEW ----- */
+        .review-section {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #2d3748;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .review-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #2d3748;
+            font-size: 12px;
+        }
+        .review-item .q {
+            color: var(--text);
+        }
+        .review-item .correct {
+            color: var(--success);
+        }
+        .review-item .your {
+            color: var(--danger);
+        }
+
+        /* ----- LEADERBOARD ----- */
+        .lb-tabs {
+            display: flex;
+            gap: 6px;
+            margin: 8px 0 12px;
+        }
+        .lb-tab {
+            flex: 1;
+            padding: 8px 10px;
+            background: #1e2538;
+            border: 1px solid #2d3748;
+            border-radius: 60px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dim);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .lb-tab.active {
+            background: var(--neon-purple);
+            color: #fff;
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.12);
+        }
+        .lb-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            background: #1e2538;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            border-left: 3px solid transparent;
+            gap: 6px;
+        }
+        .lb-item.top1 {
+            border-left-color: var(--gold);
+            background: #2d3400;
+        }
+        .lb-item.top2 {
+            border-left-color: #94a3b8;
+        }
+        .lb-item.top3 {
+            border-left-color: #b45309;
+        }
+        .lb-item .rank {
+            font-weight: 700;
+            min-width: 22px;
+            color: var(--dim);
+        }
+        .lb-item .name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .lb-item .score {
+            font-weight: 700;
+            color: var(--neon-blue);
+        }
+        .lb-item .major-tag {
+            font-size: 9px;
+            background: #2d3748;
+            padding: 1px 8px;
+            border-radius: 60px;
+            color: var(--dim);
+        }
+        .rival-highlight {
+            border-color: var(--gold) !important;
+            background: #2d3400 !important;
+        }
+        .rival-highlight .name::after {
+            content: " ⭐";
+            color: var(--gold);
+            font-size: 12px;
+        }
+
+        /* ----- BOTTOM NAV ----- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: #141824;
+            border-radius: 60px;
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border: 1px solid #2d3748;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            height: var(--nav-height);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .bottom-nav.hidden-nav {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+            pointer-events: none;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            color: var(--dim);
+            font-size: 9px;
+            padding: 4px 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            gap: 1px;
+            min-width: 44px;
+            border-radius: 30px;
+            padding: 4px 10px;
+        }
+        .nav-item .nav-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+        .nav-item .nav-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+        .nav-item.active {
+            color: var(--neon-blue);
+            background: rgba(0, 212, 255, 0.06);
+        }
+        .nav-item.active .nav-label {
+            color: var(--neon-blue);
+        }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 480px) {
+            #app {
+                padding: 12px 10px 14px;
+                border-radius: 20px;
+                min-height: 480px;
+            }
+            #board {
+                gap: 4px;
+                padding: 6px;
+            }
+            .tile {
+                min-height: 36px;
+                font-size: 10px;
+                border-radius: 6px;
+            }
+            .tile .tile-num {
+                font-size: 11px;
+                top: 1px;
+                left: 3px;
+            }
+            .tile .pawn-group .pawn {
+                font-size: 13px;
+            }
+            .card-container-expanded .card-back .q-text {
+                font-size: 15px;
+            }
+            .card-container-expanded .card-back .q-options button {
+                font-size: 13px;
+                padding: 8px 10px;
+            }
+            .turn-indicator {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .turn-indicator .player-stats {
+                font-size: 11px;
+                gap: 4px;
+            }
+            .result-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .dice-result {
+                font-size: 22px;
+                min-height: 36px;
+            }
+            .profile-card .avatar {
+                font-size: 30px;
+                width: 44px;
+                height: 44px;
+            }
+            .profile-card .rp .value {
+                font-size: 22px;
+            }
+            .bottom-nav {
+                height: 54px;
+                padding: 2px 6px;
+            }
+            .nav-item {
+                padding: 2px 6px;
+                min-width: 36px;
+            }
+            .nav-item .nav-icon {
+                font-size: 17px;
+            }
+            .nav-item .nav-label {
+                font-size: 7px;
+            }
+            .btn-vertical-group .btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+            .room-container .room-code-display .code {
+                font-size: 26px;
+            }
+            .profile-detail .row select {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+        @media (max-width: 380px) {
+            #board {
+                gap: 3px;
+                padding: 4px;
+            }
+            .tile {
+                min-height: 28px;
+                font-size: 8px;
+            }
+            .tile .pawn-group .pawn {
+                font-size: 10px;
+            }
+            .tile .tile-num {
+                font-size: 9px;
+            }
+            .card-container-expanded .card-back .q-text {
+                font-size: 13px;
+            }
+            .card-container-expanded .card-back .q-options button {
+                font-size: 11px;
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- ======================== HEADER ======================== -->
+        <div class="app-header">
+            <span class="brand">QuizBoard</span>
+            <button class="sound-btn" id="musicToggle" onclick="toggleMusic()">🔊</button>
+        </div>
+
+        <!-- ======================== PAGES ======================== -->
+
+        <!-- AUTH (Login / Signup) -->
+        <div id="authPage" class="page">
+            <span style="font-size:60px;text-align:center;display:block;margin-bottom:4px;">🚀</span>
+            <div class="title">QuizBoard</div>
+            <div class="sub">Blind gamble your way to knowledge!</div>
+            <div class="auth-container" id="authContainer">
+                <!-- Login form (default) -->
+                <div id="loginForm">
+                    <label>Email / Username</label>
+                    <input id="loginEmail" placeholder="Enter your email..." value="demo@mail.com" />
+                    <label style="margin-top:10px;">Password</label>
+                    <input id="loginPassword" type="password" placeholder="Enter password..." value="123456" />
+                    <button class="btn" style="margin-top:16px;" onclick="handleLogin()">🔑 Login</button>
+                    <div class="toggle-auth">Don't have an account? <span onclick="showSignup()">Sign Up</span></div>
+                </div>
+                <!-- Signup form (hidden) -->
+                <div id="signupForm" class="hidden">
+                    <label>Full Name</label>
+                    <input id="signupName" placeholder="Your name..." />
+                    <label style="margin-top:10px;">Email / Username</label>
+                    <input id="signupEmail" placeholder="Enter email..." />
+                    <label style="margin-top:10px;">Password</label>
+                    <input id="signupPassword" type="password" placeholder="Create password..." />
+                    <label style="margin-top:10px;">Major</label>
+                    <select id="signupMajor">
+                        <option value="Computer Science">💻 Computer Science</option>
+                        <option value="Business">📊 Business</option>
+                        <option value="Economics">📈 Economics</option>
+                        <option value="Electrical Engineering">⚡ Electrical Engineering</option>
+                        <option value="Robotics">🤖 Robotics</option>
+                        <option value="Mechanical Engineering">🔧 Mechanical Engineering</option>
+                    </select>
+                    <button class="btn btn-gold" style="margin-top:16px;" onclick="handleSignup()">🚀 Sign Up</button>
+                    <div class="toggle-auth">Already have an account? <span onclick="showLogin()">Login</span></div>
+                </div>
+                <div id="authMsg" style="text-align:center;font-size:14px;min-height:24px;color:var(--danger);"></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboardPage" class="page hidden">
+            <div class="profile-card">
+                <div class="avatar" id="dashAvatar">🎓</div>
+                <div class="info">
+                    <div class="name" id="dashName">-</div>
+                    <div class="major" id="dashMajor">-</div>
+                </div>
+                <div class="rp">
+                    <div class="label">RP</div>
+                    <div class="value" id="dashTotalRP">0</div>
+                </div>
+            </div>
+            <div class="stat-grid">
+                <div class="stat-card"><div class="num" id="dashGames">0</div><div class="lbl">Games</div></div>
+                <div class="stat-card"><div class="num" id="dashStreak">0</div><div class="lbl">Best Streak</div></div>
+                <div class="stat-card"><div class="num" id="dashWin">0</div><div class="lbl">Finishes</div></div>
+            </div>
+
+            <div class="btn-vertical-group">
+                <button class="btn btn-gold" onclick="showRoomSetup()">👥 Online Multiplayer</button>
+                <button class="btn btn-outline" onclick="startSinglePlayer('sprint')">⚡ Solo Sprint</button>
+                <button class="btn btn-outline" onclick="startSinglePlayer('marathon')">🏁 Solo Marathon</button>
+            </div>
+
+            <div class="rival-notif" id="rivalNotif" style="margin-top:6px;font-size:12px;color:var(--gold);text-align:center;min-height:18px;">🏷️ Pick a rival in Leaderboard</div>
+        </div>
+
+        <!-- ROOM SETUP -->
+        <div id="roomPage" class="page hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="title" style="font-size:22px;">👥 Online Room</span>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('dashboardPage')">✕</button>
+            </div>
+            <div class="room-container">
+                <div class="room-code-display">
+                    <div class="label">📡 Room Code</div>
+                    <div class="code" id="roomCodeDisplay">------</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline" style="flex:1;" onclick="createRoom()">🆕 Create Room</button>
+                    <button class="btn btn-outline" style="flex:1;" onclick="joinRoom()">🔗 Join Room</button>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <input id="roomJoinInput" placeholder="Enter room code..." style="flex:1;" />
+                    <button class="btn btn-sm" style="width:auto;padding:0 16px;" onclick="joinRoomWithCode()">Join</button>
+                </div>
+                <div class="player-list-room" id="roomPlayerList">
+                    <div class="player-chip"><span class="emoji">🎓</span><span class="name">You (Host)</span><span class="status ready">✅ Ready</span></div>
+                </div>
+                <button class="btn btn-gold" onclick="startOnlineGame()">🚀 Start Game</button>
+                <div id="roomMsg" style="margin-top:6px;font-size:12px;color:var(--dim);text-align:center;min-height:18px;"></div>
+            </div>
+        </div>
+
+        <!-- PROFILE -->
+        <div id="profilePage" class="page hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="title" style="font-size:22px;">👤 Profile</span>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('dashboardPage')">✕</button>
+            </div>
+            <div class="profile-avatar-edit">
+                <div class="big-avatar" id="profileAvatar" onclick="changeAvatar()">🎓</div>
+                <button class="change-avatar-btn" onclick="changeAvatar()">🔄 Change Avatar</button>
+            </div>
+            <div class="profile-detail">
+                <div class="row"><span class="label">Name</span><span class="value" id="profileName">-</span></div>
+                <div class="row">
+                    <span class="label">Major</span>
+                    <select id="profileMajorSelect" onchange="updateMajor()">
+                        <option value="Computer Science">💻 Computer Science</option>
+                        <option value="Business">📊 Business</option>
+                        <option value="Economics">📈 Economics</option>
+                        <option value="Electrical Engineering">⚡ Electrical Engineering</option>
+                        <option value="Robotics">🤖 Robotics</option>
+                        <option value="Mechanical Engineering">🔧 Mechanical Engineering</option>
+                    </select>
+                </div>
+                <div class="row"><span class="label">Total RP</span><span class="value text-gold" id="profileRP">0</span></div>
+                <div class="row"><span class="label">Games Played</span><span class="value" id="profileGames">0</span></div>
+                <div class="row"><span class="label">Best Streak</span><span class="value text-neon" id="profileStreak">0</span></div>
+                <div class="row"><span class="label">Finishes</span><span class="value" id="profileWins">0</span></div>
+            </div>
+            <!-- Friends -->
+            <div style="margin-top:4px;">
+                <div style="font-weight:600;font-size:15px;margin-bottom:4px;">👥 Friends</div>
+                <div class="friend-list" id="friendList"></div>
+                <div class="add-friend-input">
+                    <input id="friendInput" placeholder="Enter friend's name..." />
+                    <button onclick="addFriend()">Add</button>
+                </div>
+                <div id="friendMsg" style="font-size:12px;color:var(--dim);margin-top:4px;"></div>
+            </div>
+            <!-- Logout Button -->
+            <button class="btn btn-danger" style="margin-top:16px;" onclick="logout()">🚪 Logout</button>
+        </div>
+
+        <!-- SHOP -->
+        <div id="shopPage" class="page hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="title" style="font-size:22px;">🛒 Item Shop</span>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('dashboardPage')">✕</button>
+            </div>
+            <div style="background:#1e2538;border-radius:14px;padding:10px;border:1px solid #2d3748;text-align:center;margin-bottom:10px;">
+                <span style="color:var(--dim);">Your RP: </span><span style="font-weight:700;color:var(--gold);" id="shopBalance">0</span>
+            </div>
+            <div class="shop-grid" id="shopGrid"></div>
+            <div id="shopMsg" style="margin-top:6px;text-align:center;font-size:13px;min-height:20px;"></div>
+        </div>
+
+        <!-- INVENTORY -->
+        <div id="inventoryPage" class="page hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="title" style="font-size:22px;">🎒 Inventory</span>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('dashboardPage')">✕</button>
+            </div>
+            <div id="inventoryContent" style="background:#1e2538;border-radius:14px;padding:14px;border:1px solid #2d3748;"></div>
+        </div>
+
+        <!-- GAME -->
+        <div id="gamePage" class="page hidden">
+            <div class="turn-indicator" id="turnIndicator">
+                <div class="turn-label">🎯 <span class="highlight" id="turnPlayerName">-</span>'s Turn</div>
+                <div class="player-stats">
+                    <span id="turnRp">RP: 0</span>
+                    <span id="turnStreak">🔥 0</span>
+                    <span id="turnPos">Tile 1/50</span>
+                </div>
+            </div>
+            <div class="timer-wrap">
+                <div class="timer-bar-bg"><div class="timer-bar-fill" id="timerFill"></div></div>
+                <div class="timer-text" id="timerText">20:00</div>
+            </div>
+            <div id="board"></div>
+            <div class="card-container-expanded" id="cardContainerExpanded">
+                <div class="card-slot" id="mainCardSlot" onclick="pickCard(0)">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <div class="lock-icon">🔒</div>
+                            <div class="big-q">?</div>
+                            <div style="font-size:13px;color:var(--dim);margin-top:4px;">Tap to pick a card</div>
+                        </div>
+                        <div class="card-back" id="mainCardBack"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dice-result" id="diceDisplay">🎲 Pick a card!</div>
+            <button class="btn btn-outline" style="margin-top:4px;background:#1e2538;padding:10px;" onclick="exitGame()">🚪 Exit Game</button>
+        </div>
+
+        <!-- RESULT -->
+        <div id="resultPage" class="page hidden">
+            <div class="title" style="font-size:22px;">🏁 Game Over!</div>
+            <div id="resultContent"></div>
+            <div id="reviewSection" class="hidden">
+                <h4 style="margin-top:8px;font-size:15px;">📝 Review Mistakes</h4>
+                <div class="review-section" id="reviewList"></div>
+            </div>
+            <div class="flex" style="margin-top:10px;">
+                <button class="btn btn-gold" onclick="navigateTo('dashboardPage')">🏠 Home</button>
+                <button class="btn btn-outline" onclick="navigateTo('leaderboardPage')">🏆 Leaderboard</button>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div id="leaderboardPage" class="page hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span class="title" style="font-size:22px;">🏆 Leaderboard</span>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('dashboardPage')">✕</button>
+            </div>
+            <div class="lb-tabs">
+                <div class="lb-tab active" data-tab="major" onclick="switchLB('major')">🏅 Major</div>
+                <div class="lb-tab" data-tab="hof" onclick="switchLB('hof')">🎰 Hall of Fame</div>
+            </div>
+            <div id="lbContent" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- ======================== BOTTOM NAV ======================== -->
+        <div class="bottom-nav hidden-nav" id="bottomNav">
+            <button class="nav-item active" data-page="dashboardPage" onclick="navigateTo('dashboardPage')">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </button>
+            <button class="nav-item" data-page="profilePage" onclick="navigateTo('profilePage')">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </button>
+            <button class="nav-item" data-page="leaderboardPage" onclick="navigateTo('leaderboardPage')">
+                <span class="nav-icon">🏆</span>
+                <span class="nav-label">Rank</span>
+            </button>
+            <button class="nav-item" data-page="inventoryPage" onclick="navigateTo('inventoryPage')">
+                <span class="nav-icon">🎒</span>
+                <span class="nav-label">Bag</span>
+            </button>
+            <button class="nav-item" data-page="shopPage" onclick="navigateTo('shopPage')">
+                <span class="nav-icon">🛒</span>
+                <span class="nav-label">Shop</span>
+            </button>
+        </div>
+
+        <audio id="bgMusicLoop" loop>
+            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg" />
+        </audio>
+    </div>
+
+    <script>
+        // ================================================================
+        //  SOUND ENGINE (Web Audio API)
+        // ================================================================
+        let audioCtx = null;
+
+        function ensureAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                return audioCtx;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function playBeep(freq, duration, type = 'sine', volume = 0.3) {
+            try {
+                const ctx = ensureAudio();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.value = volume;
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) { /* silent fail */ }
+        }
+
+        function playClick() {
+            playBeep(800, 0.05, 'square', 0.08);
+        }
+
+        function playCorrect() {
+            playBeep(523, 0.15, 'sine', 0.25);
+            setTimeout(() => playBeep(659, 0.15, 'sine', 0.25), 150);
+            setTimeout(() => playBeep(784, 0.2, 'sine', 0.25), 300);
+        }
+
+        function playWrong() {
+            playBeep(300, 0.3, 'sawtooth', 0.2);
+            setTimeout(() => playBeep(200, 0.4, 'sawtooth', 0.15), 200);
+        }
+
+        function playMove() {
+            playBeep(600, 0.06, 'sine', 0.08);
+        }
+
+        // ================================================================
+        //  QUESTION BANK
+        // ================================================================
+        const QUESTION_BANK = {
+            "Computer Science": {
+                easy: [
+                    { q: "What does HTML stand for?", o: ["Hyper Text Markup Language", "High Tech Machine Language",
+                            "Hyper Transfer Markup Logic", "Home Tool Markup Language"
+                        ], a: 0 },
+                    { q: "What is the function of `console.log()`?", o: ["Display output to the console",
+                            "Save data to a file", "Send data to a server", "Delete a variable"
+                        ], a: 0 },
+                    { q: "What is a variable in programming?", o: ["A container for storing data", "A function for looping",
+                            "A numeric data type", "A compilation process"
+                        ], a: 0 },
+                ],
+                medium: [
+                    { q: "What is the main difference between `var` and `let` in JavaScript?",
+                        o: ["Scope (block vs function)", "Execution speed", "Memory size", "No difference"
+                        ], a: 0 },
+                    { q: "What is OOP?", o: ["Object-Oriented Programming", "Online Operating Protocol",
+                            "Output Optimization Process", "Open Operation Platform"
+                        ], a: 0 },
+                    { q: "What is the purpose of an API?", o: ["To connect applications", "To manage databases",
+                            "To design UI", "To compress files"
+                        ], a: 0 },
+                ],
+                hard: [
+                    { q: "What is the difference between a process and a thread?",
+                        o: ["Processes have separate memory, threads share memory", "Threads are heavier than processes",
+                            "Process = Thread", "No difference"
+                        ], a: 0 },
+                    { q: "What is garbage collection?", o: ["Automatic memory management", "Collecting digital waste",
+                            "Data analysis", "File encryption"
+                        ], a: 0 },
+                    { q: "What is a deadlock?", o: ["Two processes waiting for each other", "CPU hang",
+                            "Syntax error", "Data loss"
+                        ], a: 0 },
+                ]
+            },
+            "Business": {
+                easy: [
+                    { q: "What is BEP?", o: ["Break-even point", "Maximum profit", "Total loss", "Selling price"],
+                        a: 0 },
+                    { q: "What is the marketing mix (4P)?", o: ["Product, Price, Place, Promotion",
+                            "People, Process, Physical, Profit", "Plan, Prepare, Produce, Present",
+                            "Purpose, Practice, Performance, Profit"
+                        ], a: 0 },
+                    { q: "What is a business plan?", o: ["A business roadmap", "A financial report",
+                            "Competitor analysis", "HR strategy"
+                        ], a: 0 },
+                ],
+                medium: [
+                    { q: "What is SWOT analysis?", o: ["Strengths, Weaknesses, Opportunities, Threats",
+                            "Sales, Wages, Output, Trade", "System, Work, Order, Task", "Strategy, Win, Offer, Team"
+                        ], a: 0 },
+                    { q: "What is supply chain management?", o: ["Management of the flow of goods", "Marketing management",
+                            "Resource management", "Risk management"
+                        ], a: 0 },
+                    { q: "What is a balance sheet?", o: ["Statement of financial position", "Income statement",
+                            "Cash flow statement", "Statement of changes in equity"
+                        ], a: 0 },
+                ],
+                hard: [
+                    { q: "What is the difference between a merger and an acquisition?",
+                        o: ["Merger is combining equals, Acquisition is buying", "Acquisition is combining equals, Merger is buying",
+                            "They are the same", "No difference"
+                        ], a: 0 },
+                    { q: "What is the Blue Ocean Strategy?", o: ["Creating a new market space with no competition",
+                            "Low-cost strategy", "Global expansion", "Digitalization strategy"
+                        ], a: 0 },
+                    { q: "What is EBITDA?", o: ["Earnings before interest, taxes, depreciation, and amortization",
+                            "Net profit", "Gross income", "Free cash flow"
+                        ], a: 0 },
+                ]
+            }
+        };
+        // Fallback for other majors
+        const majors = ['Computer Science', 'Business', 'Economics', 'Electrical Engineering', 'Robotics',
+            'Mechanical Engineering'
+        ];
+        majors.forEach(m => {
+            if (!QUESTION_BANK[m]) {
+                QUESTION_BANK[m] = QUESTION_BANK['Computer Science'];
+            }
+        });
+
+        // ================================================================
+        //  STATE & STORAGE
+        // ================================================================
+        let G = {};
+        let store = {};
+        let currentUser = null;
+        let gameTimer = null;
+        let timerSeconds = 180;
+        let gameActive = false;
+        let isMultiplayer = false;
+        let mpDuration = 'sprint';
+        let playerEmojis = ['🎓', '🚀', '🦊', '👾'];
+        let playerColors = ['#00d4ff', '#f87171', '#34d399', '#fbbf24'];
+        let musicPlaying = false;
+        const bgMusic = document.getElementById('bgMusicLoop');
+        const bottomNav = document.getElementById('bottomNav');
+        let isRoomHost = false;
+        let roomCode = '';
+
+        function getStore() {
+            try { return JSON.parse(localStorage.getItem('gambleRecall')) || {}; } catch (e) { return {}; }
+        }
+
+        function setStore(data) {
+            localStorage.setItem('gambleRecall', JSON.stringify(data));
+        }
+
+        function initState() {
+            const s = getStore();
+            if (!s.users) s.users = [];
+            if (!s.shopItems) {
+                s.shopItems = {
+                    loadedDice: { name: 'Loaded Dice', price: 30, desc: 'Next dice roll ≥ 4', icon: '🎲' },
+                    shield: { name: 'Shield', price: 25, desc: 'Negate one wrong penalty', icon: '🛡️' },
+                    spyglass: { name: 'Spyglass', price: 20, desc: 'Reveal card levels for a turn', icon: '🔭' },
+                };
+            }
+            return s;
+        }
+        store = initState();
+
+        // ================================================================
+        //  AUTH
+        // ================================================================
+        function showSignup() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+            document.getElementById('authMsg').textContent = '';
+            playClick();
+        }
+
+        function showLogin() {
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('authMsg').textContent = '';
+            playClick();
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (!email || !password) {
+                document.getElementById('authMsg').textContent = 'Please fill in all fields.';
+                document.getElementById('authMsg').style.color = 'var(--danger)';
+                return;
+            }
+            const user = store.users.find(u => u.email === email && u.password === password);
+            if (!user) {
+                document.getElementById('authMsg').textContent = 'Invalid email or password.';
+                document.getElementById('authMsg').style.color = 'var(--danger)';
+                return;
+            }
+            currentUser = user;
+            document.getElementById('authMsg').textContent = '';
+            bottomNav.classList.remove('hidden-nav');
+            navigateTo('dashboardPage');
+            renderDashboard();
+            playClick();
+        }
+
+        function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value.trim();
+            const major = document.getElementById('signupMajor').value;
+            if (!name || !email || !password) {
+                document.getElementById('authMsg').textContent = 'Please fill in all fields.';
+                document.getElementById('authMsg').style.color = 'var(--danger)';
+                return;
+            }
+            if (store.users.find(u => u.email === email)) {
+                document.getElementById('authMsg').textContent = 'Email already registered.';
+                document.getElementById('authMsg').style.color = 'var(--danger)';
+                return;
+            }
+            const newUser = {
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                name,
+                email,
+                password,
+                major,
+                totalRP: 0,
+                totalGames: 0,
+                totalWins: 0,
+                bestStreak: 0,
+                rival: null,
+                friends: [],
+                inventory: { loadedDice: 0, shield: 0, spyglass: 0 },
+                wrongHistory: [],
+                avatar: '🎓',
+            };
+            store.users.push(newUser);
+            setStore(store);
+            currentUser = newUser;
+            document.getElementById('authMsg').textContent = '✅ Account created! Logging in...';
+            document.getElementById('authMsg').style.color = 'var(--success)';
+            setTimeout(() => {
+                bottomNav.classList.remove('hidden-nav');
+                navigateTo('dashboardPage');
+                renderDashboard();
+                playClick();
+            }, 500);
+        }
+
+        function logout() {
+            if (!confirm('Logout?')) return;
+            currentUser = null;
+            bottomNav.classList.add('hidden-nav');
+            navigateTo('authPage');
+            showLogin();
+            playClick();
+        }
+
+        // ================================================================
+        //  DASHBOARD
+        // ================================================================
+        function renderDashboard() {
+            if (!currentUser) return;
+            const p = currentUser;
+            document.getElementById('dashName').textContent = p.name;
+            document.getElementById('dashMajor').textContent = p.major;
+            document.getElementById('dashTotalRP').textContent = p.totalRP || 0;
+            document.getElementById('dashGames').textContent = p.totalGames || 0;
+            document.getElementById('dashStreak').textContent = p.bestStreak || 0;
+            document.getElementById('dashWin').textContent = p.totalWins || 0;
+            document.getElementById('dashAvatar').textContent = p.avatar || '🎓';
+
+            if (p.rival) {
+                const rival = store.users.find(u => u.id === p.rival);
+                if (rival) {
+                    document.getElementById('rivalNotif').innerHTML =
+                        `⭐ Rival: ${rival.avatar||'🎯'} ${rival.name} (${rival.major}) RP ${rival.totalRP||0}`;
+                } else {
+                    document.getElementById('rivalNotif').textContent = 'Pick a rival in Leaderboard!';
+                }
+            } else {
+                document.getElementById('rivalNotif').textContent = '🏷️ Pick a rival in Leaderboard (click a name)';
+            }
+            const idx = store.users.findIndex(u => u.id === p.id);
+            if (idx > -1) store.users[idx] = p;
+            setStore(store);
+        }
+
+        // ================================================================
+        //  ROOM
+        // ================================================================
+        function showRoomSetup() {
+            navigateTo('roomPage');
+            document.getElementById('roomMsg').textContent = '';
+            document.getElementById('roomCodeDisplay').textContent = '------';
+            document.getElementById('roomPlayerList').innerHTML = `
+                <div class="player-chip"><span class="emoji">🎓</span><span class="name">You</span><span class="status ready">✅ Ready</span></div>
+            `;
+            isRoomHost = false;
+            roomCode = '';
+            playClick();
+        }
+
+        function createRoom() {
+            isRoomHost = true;
+            roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('roomCodeDisplay').textContent = roomCode;
+            document.getElementById('roomMsg').textContent = '✅ Room created! Share the code with friends. (50 tiles, 20 min)';
+            document.getElementById('roomMsg').style.color = 'var(--success)';
+            const list = document.getElementById('roomPlayerList');
+            list.innerHTML = `
+                <div class="player-chip"><span class="emoji">🎓</span><span class="name">You (Host)</span><span class="status ready">✅ Ready</span></div>
+                <div class="player-chip"><span class="emoji">🚀</span><span class="name">Player 2 (Demo)</span><span class="status">⏳ Waiting...</span></div>
+            `;
+            playClick();
+        }
+
+        function joinRoom() {
+            document.getElementById('roomJoinInput').focus();
+            document.getElementById('roomMsg').textContent = 'Enter a room code above.';
+            document.getElementById('roomMsg').style.color = 'var(--dim)';
+            playClick();
+        }
+
+        function joinRoomWithCode() {
+            const code = document.getElementById('roomJoinInput').value.trim().toUpperCase();
+            if (!code) {
+                document.getElementById('roomMsg').textContent = 'Please enter a room code.';
+                document.getElementById('roomMsg').style.color = 'var(--danger)';
+                return;
+            }
+            roomCode = code;
+            document.getElementById('roomCodeDisplay').textContent = code;
+            document.getElementById('roomMsg').textContent = '✅ Joined room ' + code + '! Waiting for host...';
+            document.getElementById('roomMsg').style.color = 'var(--success)';
+            const list = document.getElementById('roomPlayerList');
+            list.innerHTML = `
+                <div class="player-chip"><span class="emoji">🎓</span><span class="name">You</span><span class="status ready">✅ Ready</span></div>
+                <div class="player-chip"><span class="emoji">🦊</span><span class="name">Host (Demo)</span><span class="status ready">✅ Ready</span></div>
+            `;
+            playClick();
+        }
+
+        function startOnlineGame() {
+            if (!isRoomHost) {
+                document.getElementById('roomMsg').textContent = 'Only the host can start the game.';
+                document.getElementById('roomMsg').style.color = 'var(--danger)';
+                return;
+            }
+            document.getElementById('roomMsg').textContent = '🚀 Starting game (50 tiles, 20 minutes)...';
+            document.getElementById('roomMsg').style.color = 'var(--neon-blue)';
+            // Set multiplayer duration to marathon mode (50 tiles)
+            mpDuration = 'marathon';
+            setTimeout(() => {
+                startMultiplayerGame();
+            }, 500);
+            playClick();
+        }
+
+        // ================================================================
+        //  SHOP
+        // ================================================================
+        function renderShop() {
+            const p = currentUser;
+            if (!p) return;
+            document.getElementById('shopBalance').textContent = p.totalRP || 0;
+            const grid = document.getElementById('shopGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const items = store.shopItems;
+            for (const [key, item] of Object.entries(items)) {
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                const count = (p.inventory && p.inventory[key]) || 0;
+                div.innerHTML = `
+                    <div class="icon">${item.icon}</div>
+                    <div class="name">${item.name}</div>
+                    <div class="price">${item.price} RP</div>
+                    <div class="count">Owned: ${count}</div>
+                    <button class="btn btn-sm btn-gold" style="margin-top:4px;font-size:11px;padding:6px;" onclick="buyItem('${key}')">Buy</button>
+                `;
+                grid.appendChild(div);
+            }
+            document.getElementById('shopMsg').textContent = '';
+        }
+
+        function buyItem(key) {
+            const p = currentUser;
+            if (!p) return;
+            const item = store.shopItems[key];
+            if (!item) return;
+            if ((p.totalRP || 0) < item.price) {
+                document.getElementById('shopMsg').textContent = '❌ Not enough RP!';
+                document.getElementById('shopMsg').style.color = 'var(--danger)';
+                return;
+            }
+            p.totalRP = (p.totalRP || 0) - item.price;
+            if (!p.inventory) p.inventory = {};
+            p.inventory[key] = (p.inventory[key] || 0) + 1;
+            const idx = store.users.findIndex(u => u.id === p.id);
+            if (idx > -1) store.users[idx] = p;
+            setStore(store);
+            renderShop();
+            renderDashboard();
+            document.getElementById('shopMsg').textContent = `✅ Purchased ${item.name}!`;
+            document.getElementById('shopMsg').style.color = 'var(--success)';
+            playClick();
+        }
+
+        // ================================================================
+        //  INVENTORY
+        // ================================================================
+        function renderInventory() {
+            const p = currentUser;
+            if (!p) return;
+            const container = document.getElementById('inventoryContent');
+            const inv = p.inventory || {};
+            let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
+            let hasItems = false;
+            for (const [key, count] of Object.entries(inv)) {
+                const item = store.shopItems[key];
+                if (!item || count === 0) continue;
+                hasItems = true;
+                html += `
+                    <div style="background:#0f131f;padding:8px 14px;border-radius:12px;text-align:center;border:1px solid #2d3748;">
+                        <div style="font-size:22px;">${item.icon}</div>
+                        <div style="font-weight:600;font-size:13px;">${item.name}</div>
+                        <div style="color:var(--gold);">x${count}</div>
+                        <button class="btn btn-sm btn-outline" style="margin-top:4px;font-size:11px;padding:4px 12px;" onclick="useItem('${key}')">Use</button>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+            if (!hasItems) {
+                html = '<div class="text-dim" style="text-align:center;padding:20px;">No items yet. Visit the Shop!</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function useItem(key) {
+            alert(`Item "${store.shopItems[key]?.name}" will be applied on your next turn.`);
+            playClick();
+        }
+
+        // ================================================================
+        //  PROFILE
+        // ================================================================
+        function renderProfile() {
+            if (!currentUser) return;
+            const p = currentUser;
+            document.getElementById('profileAvatar').textContent = p.avatar || '🎓';
+            document.getElementById('profileName').textContent = p.name;
+            const select = document.getElementById('profileMajorSelect');
+            select.value = p.major;
+            document.getElementById('profileRP').textContent = p.totalRP || 0;
+            document.getElementById('profileGames').textContent = p.totalGames || 0;
+            document.getElementById('profileStreak').textContent = p.bestStreak || 0;
+            document.getElementById('profileWins').textContent = p.totalWins || 0;
+            // Friends
+            const list = document.getElementById('friendList');
+            if (list) {
+                list.innerHTML = '';
+                if (p.friends && p.friends.length > 0) {
+                    p.friends.forEach(fid => {
+                        const friend = store.users.find(u => u.id === fid);
+                        if (friend) {
+                            const chip = document.createElement('span');
+                            chip.className = 'friend-chip';
+                            chip.innerHTML =
+                                `${friend.avatar||'👤'} ${friend.name} <button class="remove-friend" onclick="removeFriend('${fid}')">✕</button>`;
+                            list.appendChild(chip);
+                        }
+                    });
+                } else {
+                    list.innerHTML = '<span class="text-dim" style="font-size:13px;">No friends yet.</span>';
+                }
+            }
+        }
+
+        function updateMajor() {
+            if (!currentUser) return;
+            const newMajor = document.getElementById('profileMajorSelect').value;
+            if (newMajor === currentUser.major) return;
+            currentUser.major = newMajor;
+            const idx = store.users.findIndex(u => u.id === currentUser.id);
+            if (idx > -1) store.users[idx] = currentUser;
+            setStore(store);
+            renderProfile();
+            renderDashboard();
+            playClick();
+            document.getElementById('friendMsg').textContent = '✅ Major updated!';
+            document.getElementById('friendMsg').style.color = 'var(--success)';
+            setTimeout(() => {
+                document.getElementById('friendMsg').textContent = '';
+            }, 2000);
+        }
+
+        function changeAvatar() {
+            if (!currentUser) return;
+            const emojis = ['🎓', '👨‍🎓', '👩‍🎓', '🧑‍🎓', '🌟', '🔥', '🦊', '🐺', '🦅', '🐉', '🚀', '💎', '👾', '🤖', '🧙', '⚡', '🎯', '🏆'];
+            const current = currentUser.avatar || '🎓';
+            let nextIndex = (emojis.indexOf(current) + 1) % emojis.length;
+            if (nextIndex < 0) nextIndex = 0;
+            currentUser.avatar = emojis[nextIndex];
+            const idx = store.users.findIndex(u => u.id === currentUser.id);
+            if (idx > -1) store.users[idx] = currentUser;
+            setStore(store);
+            renderProfile();
+            renderDashboard();
+            playClick();
+        }
+
+        function addFriend() {
+            if (!currentUser) return;
+            const name = document.getElementById('friendInput').value.trim();
+            if (!name) {
+                document.getElementById('friendMsg').textContent = 'Please enter a name.';
+                document.getElementById('friendMsg').style.color = 'var(--danger)';
+                return;
+            }
+            const target = store.users.find(u => u.name === name);
+            if (!target || target.id === currentUser.id) {
+                document.getElementById('friendMsg').textContent = 'Player not found.';
+                document.getElementById('friendMsg').style.color = 'var(--danger)';
+                return;
+            }
+            if (currentUser.friends && currentUser.friends.includes(target.id)) {
+                document.getElementById('friendMsg').textContent = 'Already friends!';
+                return;
+            }
+            if (!currentUser.friends) currentUser.friends = [];
+            currentUser.friends.push(target.id);
+            const idx = store.users.findIndex(u => u.id === currentUser.id);
+            if (idx > -1) store.users[idx] = currentUser;
+            setStore(store);
+            document.getElementById('friendInput').value = '';
+            document.getElementById('friendMsg').textContent = `✅ Added ${target.name}!`;
+            document.getElementById('friendMsg').style.color = 'var(--success)';
+            renderProfile();
+            playClick();
+        }
+
+        function removeFriend(fid) {
+            if (!currentUser) return;
+            currentUser.friends = currentUser.friends.filter(id => id !== fid);
+            const idx = store.users.findIndex(u => u.id === currentUser.id);
+            if (idx > -1) store.users[idx] = currentUser;
+            setStore(store);
+            renderProfile();
+            playClick();
+        }
+
+        // ================================================================
+        //  GENERATE BOARD
+        // ================================================================
+        function generateBoardLayout(totalTiles) {
+            const tiles = new Array(totalTiles).fill('normal');
+            const indices = [];
+            for (let i = 1; i < totalTiles - 1; i++) indices.push(i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            const assign = [];
+            // More special tiles for 50-tile board (3 of each instead of 2)
+            for (let i = 0; i < 3; i++) assign.push('gold');
+            for (let i = 0; i < 3; i++) assign.push('purple');
+            for (let i = 0; i < 3; i++) assign.push('mystery');
+            for (let i = assign.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [assign[i], assign[j]] = [assign[j], assign[i]];
+            }
+            for (let i = 0; i < Math.min(assign.length, indices.length); i++) {
+                tiles[indices[i]] = assign[i];
+            }
+            return tiles;
+        }
+
+        // ================================================================
+        //  ANIMATIONS
+        // ================================================================
+        function animateDice(finalValue) {
+            const el = document.getElementById('diceDisplay');
+            el.classList.add('rolling');
+            let count = 0;
+            const interval = setInterval(() => {
+                const rand = Math.floor(Math.random() * 6) + 1;
+                el.textContent = `🎲 ${rand}`;
+                count++;
+                if (count > 10) {
+                    clearInterval(interval);
+                    el.classList.remove('rolling');
+                    el.textContent = `🎲 ${finalValue}`;
+                }
+            }, 80);
+        }
+
+        function animatePawnMovement(playerIndex, fromPos, toPos, callback) {
+            let current = fromPos;
+            const totalSteps = toPos - fromPos;
+            if (totalSteps <= 0) { if (callback) callback(); return; }
+
+            let stepCount = 0;
+            const interval = setInterval(() => {
+                stepCount++;
+                current = fromPos + stepCount;
+                if (G && G.players) {
+                    G.players[playerIndex].position = Math.min(current, G.maxTiles - 1);
+                    renderMultiBoard();
+                    playMove();
+                }
+                if (stepCount >= totalSteps) {
+                    clearInterval(interval);
+                    if (callback) callback();
+                }
+            }, 280);
+        }
+
+        // ================================================================
+        //  START GAME (Solo)
+        // ================================================================
+        function startSinglePlayer(mode) {
+            if (!currentUser) return;
+            isMultiplayer = false;
+            let totalTiles, timerVal;
+            if (mode === 'marathon') { totalTiles = 30;
+                timerVal = 900; } else { totalTiles = 15;
+                timerVal = 180; }
+            const boardLayout = generateBoardLayout(totalTiles);
+            G = {
+                mode: mode,
+                maxTiles: totalTiles,
+                timer: timerVal,
+                maxTimer: timerVal,
+                isFinished: false,
+                gameOver: false,
+                usedCards: [false, false, false],
+                cardLevels: [],
+                answered: false,
+                currentPlayerIndex: 0,
+                boardLayout: boardLayout,
+                players: [{
+                    id: 0,
+                    name: currentUser.name,
+                    emoji: currentUser.avatar || '🎓',
+                    color: '#00d4ff',
+                    position: 0,
+                    streak: 0,
+                    correct: 0,
+                    wrong: 0,
+                    rp: 0,
+                    isSlowed: false,
+                    finished: false,
+                    finishOrder: null,
+                    activeItems: { loadedDice: false, shield: false, spyglass: false },
+                    wrongQuestions: [],
+                }],
+                rivalGhost: null,
+                extraSwamps: [],
+                wagerActive: false,
+                cardPicked: false,
+                isMoving: false,
+            };
+            if (currentUser.rival) {
+                const rival = store.users.find(u => u.id === currentUser.rival);
+                if (rival) {
+                    G.rivalGhost = {
+                        name: rival.name,
+                        emoji: '👻',
+                        position: Math.min(totalTiles - 1, Math.floor(Math.random() * (totalTiles - 5)) + 2)
+                    };
+                }
+            }
+            timerSeconds = G.timer;
+            gameActive = true;
+            navigateTo('gamePage');
+            renderMultiBoard();
+            updateMultiTurnUI();
+            resetCard();
+            startTimer();
+            document.getElementById('diceDisplay').textContent = '🎲 Pick a card!';
+            playClick();
+        }
+
+        // ================================================================
+        //  START GAME (Multiplayer) - 50 TILES, 20 MINUTES
+        // ================================================================
+        function startMultiplayerGame() {
+            isMultiplayer = true;
+            // 50 tiles for online multiplayer, 20 minutes (1200 seconds)
+            let totalTiles = 50;
+            let timerVal = 1200; // 20 minutes
+            const boardLayout = generateBoardLayout(totalTiles);
+            const playerNames = ['You', 'Opponent (Online)'];
+            G = {
+                mode: 'multiplayer',
+                maxTiles: totalTiles,
+                timer: timerVal,
+                maxTimer: timerVal,
+                isFinished: false,
+                gameOver: false,
+                usedCards: [false, false, false],
+                cardLevels: [],
+                answered: false,
+                currentPlayerIndex: 0,
+                boardLayout: boardLayout,
+                players: playerNames.map((name, i) => ({
+                    id: i,
+                    name: name,
+                    emoji: playerEmojis[i % playerEmojis.length],
+                    color: playerColors[i % playerColors.length],
+                    position: 0,
+                    streak: 0,
+                    correct: 0,
+                    wrong: 0,
+                    rp: 0,
+                    isSlowed: false,
+                    finished: false,
+                    finishOrder: null,
+                    activeItems: { loadedDice: false, shield: false, spyglass: false },
+                    wrongQuestions: [],
+                })),
+                rivalGhost: null,
+                extraSwamps: [],
+                wagerActive: false,
+                cardPicked: false,
+                isMoving: false,
+            };
+            timerSeconds = G.timer;
+            gameActive = true;
+            // Update the turn indicator to show 50 tiles
+            document.getElementById('turnPos').textContent = 'Tile 1/50';
+            navigateTo('gamePage');
+            renderMultiBoard();
+            updateMultiTurnUI();
+            resetCard();
+            startTimer();
+            document.getElementById('diceDisplay').textContent = '🎲 Pick a card!';
+            playClick();
+        }
+
+        // ================================================================
+        //  RENDER BOARD
+        // ================================================================
+        function renderMultiBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            const total = G.maxTiles;
+            const layout = G.boardLayout || new Array(total).fill('normal');
+            const posMap = {};
+            G.players.forEach(p => {
+                const pos = Math.min(p.position, total - 1);
+                if (!posMap[pos]) posMap[pos] = [];
+                posMap[pos].push(p);
+            });
+            for (let i = 0; i < total; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                const type = layout[i] || 'normal';
+                if (i === total - 1) tile.classList.add('finish');
+                else if (type === 'gold') tile.classList.add('gold');
+                else if (type === 'purple') tile.classList.add('purple');
+                else if (type === 'mystery') tile.classList.add('mystery');
+                tile.dataset.idx = i;
+                const numSpan = document.createElement('span');
+                numSpan.className = 'tile-num';
+                numSpan.textContent = i + 1;
+                tile.appendChild(numSpan);
+                if (type === 'gold') {
+                    const icon = document.createElement('span');
+                    icon.textContent = '🌟';
+                    icon.style.fontSize = '16px';
+                    tile.appendChild(icon);
+                } else if (type === 'purple') {
+                    const icon = document.createElement('span');
+                    icon.textContent = '🌀';
+                    icon.style.fontSize = '16px';
+                    tile.appendChild(icon);
+                } else if (type === 'mystery') {
+                    const icon = document.createElement('span');
+                    icon.textContent = '❓';
+                    icon.style.fontSize = '16px';
+                    tile.appendChild(icon);
+                }
+                if (posMap[i]) {
+                    const group = document.createElement('div');
+                    group.className = 'pawn-group';
+                    const isCurrent = G.players[G.currentPlayerIndex];
+                    posMap[i].forEach(p => {
+                        const span = document.createElement('span');
+                        span.className = 'pawn';
+                        if (isCurrent && p.id === isCurrent.id) span.classList.add('active-pawn');
+                        span.textContent = p.emoji;
+                        span.title = p.name;
+                        group.appendChild(span);
+                    });
+                    tile.appendChild(group);
+                }
+                if (G.rivalGhost && G.rivalGhost.position === i) {
+                    const ghostSpan = document.createElement('span');
+                    ghostSpan.className = 'pawn ghost-pawn';
+                    ghostSpan.textContent = '👻';
+                    ghostSpan.title = 'Rival: ' + G.rivalGhost.name;
+                    if (!posMap[i]) {
+                        const group = document.createElement('div');
+                        group.className = 'pawn-group';
+                        group.appendChild(ghostSpan);
+                        tile.appendChild(group);
+                    } else {
+                        tile.querySelector('.pawn-group').appendChild(ghostSpan);
+                    }
+                }
+                board.appendChild(tile);
+            }
+        }
+
+        // ================================================================
+        //  UPDATE TURN UI
+        // ================================================================
+        function updateMultiTurnUI() {
+            const cp = G.players[G.currentPlayerIndex];
+            if (!cp) return;
+            document.getElementById('turnPlayerName').textContent = cp.emoji + ' ' + cp.name;
+            document.getElementById('turnPlayerName').style.color = cp.color;
+            document.getElementById('turnRp').textContent = 'RP: ' + cp.rp;
+            document.getElementById('turnStreak').textContent = '🔥 ' + cp.streak;
+            document.getElementById('turnPos').textContent = 'Tile ' + (cp.position + 1) + '/' + G.maxTiles;
+            const fill = ((G.maxTimer - timerSeconds) / G.maxTimer) * 100;
+            document.getElementById('timerFill').style.width = Math.min(100, fill) + '%';
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timerText').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+            renderMultiBoard();
+        }
+
+        function startTimer() {
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timerSeconds--;
+                updateMultiTurnUI();
+                if (timerSeconds <= 0 || G.isFinished) {
+                    clearInterval(gameTimer);
+                    gameTimer = null;
+                    gameActive = false;
+                    endMultiGame();
+                }
+            }, 1000);
+        }
+
+        // ================================================================
+        //  CARD
+        // ================================================================
+        function resetCard() {
+            G.cardPicked = false;
+            G.usedCards = [false, false, false];
+            G.cardLevels = [];
+            const slot = document.getElementById('mainCardSlot');
+            slot.classList.remove('flipped', 'disabled');
+            const back = document.getElementById('mainCardBack');
+            back.innerHTML = '';
+            document.getElementById('diceDisplay').textContent = '🎲 Pick a card!';
+        }
+
+        function pickCard(index) {
+            if (!gameActive || G.isFinished || G.gameOver) return;
+            if (G.cardPicked) return;
+            const slot = document.getElementById('mainCardSlot');
+            if (slot.classList.contains('flipped')) return;
+
+            const cp = G.players[G.currentPlayerIndex];
+            if (!cp) return;
+
+            let reveal = false;
+            if (cp.activeItems && cp.activeItems.spyglass) {
+                reveal = true;
+                cp.activeItems.spyglass = false;
+                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! Levels revealed!';
+            }
+
+            const levels = ['easy', 'medium', 'hard'];
+            let pickedLevel;
+            if (reveal) {
+                const levelOrder = ['easy', 'medium', 'hard'];
+                const shuffled = [...levelOrder];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                G.cardLevels = shuffled;
+                document.getElementById('diceDisplay').textContent =
+                    `🔍 Levels: ${shuffled.map((l,i) => `Card ${i+1}: ${l.toUpperCase()}`).join(' | ')}`;
+                pickedLevel = shuffled[0];
+            } else {
+                pickedLevel = levels[Math.floor(Math.random() * levels.length)];
+                G.cardLevels[0] = pickedLevel;
+            }
+
+            const major = currentUser ? currentUser.major : 'Computer Science';
+            const pool = QUESTION_BANK[major];
+            if (!pool) {
+                document.getElementById('diceDisplay').textContent = '⚠️ No questions for this major!';
+                return;
+            }
+            const levelPool = pool[pickedLevel];
+            if (!levelPool || levelPool.length === 0) {
+                document.getElementById('diceDisplay').textContent = '⚠️ No questions for level!';
+                return;
+            }
+            const qData = levelPool[Math.floor(Math.random() * levelPool.length)];
+
+            const back = document.getElementById('mainCardBack');
+            const levelLabel = pickedLevel.toUpperCase();
+            const levelColor = pickedLevel === 'easy' ? '#34d399' : pickedLevel === 'medium' ? '#fbbf24' : '#f87171';
+            let optionsHtml = qData.o.map((opt, i) =>
+                `<button data-optidx="${i}" onclick="submitMultiAnswer(0, ${i}, ${qData.a})">${String.fromCharCode(65+i)}. ${opt}</button>`
+            ).join('');
+
+            let wagerHtml = '';
+            if (pickedLevel === 'hard') {
+                wagerHtml = `
+                    <div class="wager-area">
+                        <button onclick="setWager(true)" id="wagerYes">💰 Double or Nothing</button>
+                        <button onclick="setWager(false)" id="wagerNo">➡️ Normal</button>
+                    </div>
+                `;
+            }
+
+            back.innerHTML = `
+                <div class="q-level" style="background:${levelColor}20;color:${levelColor};">${levelLabel}</div>
+                <div class="q-text">${qData.q}</div>
+                <div class="q-options">${optionsHtml}</div>
+                ${wagerHtml}
+            `;
+
+            slot.classList.add('flipped');
+            G.cardPicked = true;
+            G.answered = false;
+            G.wagerActive = false;
+            document.getElementById('diceDisplay').textContent = '🤔 Answer!';
+        }
+
+        function setWager(active) {
+            G.wagerActive = active;
+            const yes = document.getElementById('wagerYes');
+            const no = document.getElementById('wagerNo');
+            if (yes && no) {
+                yes.className = active ? 'active' : '';
+                no.className = active ? '' : 'active';
+            }
+        }
+
+        // ================================================================
+        //  SUBMIT ANSWER
+        // ================================================================
+        function submitMultiAnswer(cardIdx, selectedIdx, correctIdx) {
+            if (G.answered || !gameActive || G.isFinished) return;
+            G.answered = true;
+
+            const slot = document.getElementById('mainCardSlot');
+            const buttons = slot.querySelectorAll('.q-options button');
+            const isCorrect = (selectedIdx === correctIdx);
+            const cp = G.players[G.currentPlayerIndex];
+            if (!cp) return;
+
+            buttons.forEach((btn, i) => {
+                btn.style.pointerEvents = 'none';
+                if (i === correctIdx) btn.classList.add('correct-glow');
+                if (i === selectedIdx && !isCorrect) btn.classList.add('wrong-glow');
+            });
+
+            const level = G.cardLevels[0] || 'easy';
+            let diceCount = 0,
+                rpGain = 0;
+            const wager = G.wagerActive && level === 'hard';
+
+            if (isCorrect) {
+                playCorrect();
+                cp.correct++;
+                cp.streak++;
+                if (cp.streak > (currentUser ? currentUser.bestStreak || 0 : 0)) {
+                    if (currentUser) currentUser.bestStreak = cp.streak;
+                }
+                if (level === 'easy') { diceCount = 1;
+                    rpGain = 10; } else if (level === 'medium') { diceCount = 2;
+                    rpGain = 15; } else { diceCount = 3;
+                    rpGain = 20; }
+                let bonusRp = 0;
+                if (cp.streak === 3) {
+                    diceCount = 6;
+                    bonusRp = 25;
+                    document.getElementById('diceDisplay').textContent = '🔥 COMBO STREAK! +25 RP!';
+                    if (currentUser && currentUser.rival) {
+                        const rival = store.users.find(u => u.id === currentUser.rival);
+                        if (rival) {
+                            if (!rival.debuffSent) rival.debuffSent = [];
+                            rival.debuffSent.push({ type: 'extraSwamp', from: currentUser.name });
+                            const idxR = store.users.findIndex(u => u.id === rival.id);
+                            if (idxR > -1) store.users[idxR] = rival;
+                            setStore(store);
+                            document.getElementById('diceDisplay').textContent += ' 💀 Cursed ' + rival.name + '!';
+                        }
+                    }
+                } else {
+                    document.getElementById('diceDisplay').textContent = `✅ Correct! +${rpGain} RP (${level})`;
+                }
+                if (wager) {
+                    rpGain *= 2;
+                    diceCount = Math.min(6, diceCount * 2);
+                    document.getElementById('diceDisplay').textContent += ' 💰 WAGER x2!';
+                }
+
+                let steps = 0;
+                if (cp.activeItems && cp.activeItems.loadedDice) {
+                    let roll = 0;
+                    if (diceCount === 1) roll = Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 2) roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 3) roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1 +
+                        Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 6) roll = (Math.floor(Math.random() * 6) + 1) * 2;
+                    steps = Math.max(4, roll);
+                    cp.activeItems.loadedDice = false;
+                    document.getElementById('diceDisplay').textContent += ' 🎲 Loaded Dice!';
+                } else {
+                    if (diceCount === 1) steps = Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 2) steps = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 3) steps = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1 +
+                        Math.floor(Math.random() * 6) + 1;
+                    else if (diceCount === 6) steps = (Math.floor(Math.random() * 6) + 1) * 2;
+                }
+
+                if (level === 'hard') steps += 1;
+
+                if (level === 'medium') {
+                    const opponents = G.players.filter(p => p.id !== cp.id && !p.finished);
+                    if (opponents.length > 0) {
+                        let nearest = null,
+                            nearestDist = Infinity;
+                        opponents.forEach(op => {
+                            const dist = op.position - cp.position;
+                            if (dist > 0 && dist < nearestDist) { nearestDist = dist;
+                                nearest = op; }
+                        });
+                        if (nearest) {
+                            nearest.position = Math.max(0, nearest.position - 2);
+                            document.getElementById('diceDisplay').textContent += ' 💥 Pushed ' + nearest.emoji +
+                                ' back 2 tiles!';
+                        }
+                    }
+                }
+
+                if (level === 'hard' && !wager) {
+                    const sorted = [...G.players].filter(p => !p.finished).sort((a, b) => b.position - a.position);
+                    if (sorted.length > 0 && sorted[0].id !== cp.id) {
+                        const leader = sorted[0];
+                        cp.position = leader.position;
+                        document.getElementById('diceDisplay').textContent += ' 🌀 Teleported to ' + leader.emoji +
+                            '\'s tile!';
+                    }
+                }
+
+                if (cp.isSlowed) {
+                    steps = Math.max(0, steps - 2);
+                    cp.isSlowed = false;
+                    document.getElementById('diceDisplay').textContent += ' 🐢 Swamp -2 steps!';
+                }
+
+                const oldPos = cp.position;
+                const newPos = Math.min(G.maxTiles - 1, oldPos + steps);
+                cp.position = newPos;
+                cp.rp += rpGain + bonusRp;
+
+                const layout = G.boardLayout || [];
+                const currentTile = Math.min(cp.position, G.maxTiles - 1);
+                if (layout[currentTile] === 'mystery') {
+                    const effects = [
+                        { msg: '🎁 +10 RP!', fn: () => { cp.rp += 10; } },
+                        { msg: '🚀 +2 steps!', fn: () => { cp.position = Math.min(G.maxTiles - 1, cp.position + 2); } },
+                        { msg: '⏰ -10 seconds!', fn: () => { timerSeconds = Math.max(0, timerSeconds - 10); } },
+                        { msg: '🛡️ Shield gained!', fn: () => { if (cp.activeItems) cp.activeItems.shield = true; } },
+                    ];
+                    const effect = effects[Math.floor(Math.random() * effects.length)];
+                    effect.fn();
+                    document.getElementById('diceDisplay').textContent += ' ❓ Mystery: ' + effect.msg;
+                }
+
+                if (layout[currentTile] === 'gold') {
+                    cp.position = Math.min(G.maxTiles - 1, cp.position + 3);
+                    document.getElementById('diceDisplay').textContent += ' ✨ Gold +3!';
+                }
+                if (layout[currentTile] === 'purple') {
+                    cp.isSlowed = true;
+                    document.getElementById('diceDisplay').textContent += ' 🟣 Entered Swamp!';
+                }
+
+                if (G.extraSwamps && G.extraSwamps.includes(currentTile)) {
+                    cp.isSlowed = true;
+                    document.getElementById('diceDisplay').textContent += ' 🌀 Cursed Swamp!';
+                }
+
+                if (cp.streak >= 3) {
+                    cp.streak = 0;
+                }
+
+                animateDice(steps);
+                const playerIdx = G.currentPlayerIndex;
+                const finalPos = cp.position;
+                cp.position = oldPos;
+                renderMultiBoard();
+                animatePawnMovement(playerIdx, oldPos, finalPos, () => {
+                    cp.position = finalPos;
+                    renderMultiBoard();
+                    updateMultiTurnUI();
+                });
+
+            } else {
+                playWrong();
+                cp.wrong++;
+                const qText = document.querySelector('#mainCardBack .q-text')?.textContent || 'Unknown';
+                const correctAns = document.querySelector('#mainCardBack .q-options button.correct-glow')?.textContent ||
+                    'Unknown';
+                cp.wrongQuestions.push({ question: qText, correctAnswer: correctAns, yourAnswer: selectedIdx });
+
+                let shieldUsed = false;
+                if (cp.activeItems && cp.activeItems.shield) {
+                    cp.activeItems.shield = false;
+                    shieldUsed = true;
+                    document.getElementById('diceDisplay').textContent = '🛡️ Shield absorbed the penalty!';
+                } else {
+                    cp.streak = 0;
+                    const oldPos = cp.position;
+                    const newPos = Math.max(0, oldPos - 1);
+                    cp.position = newPos;
+                    cp.rp = Math.max(0, cp.rp - 5);
+                    document.getElementById('diceDisplay').textContent = '❌ Wrong! -1 tile, -5 RP';
+                    if (cp.isSlowed) {
+                        const extraPos = Math.max(0, cp.position - 2);
+                        cp.position = extraPos;
+                        cp.isSlowed = false;
+                        document.getElementById('diceDisplay').textContent += ' 🐢 Swamp extra -2!';
+                    }
+                    const playerIdx = G.currentPlayerIndex;
+                    const finalPos = cp.position;
+                    cp.position = oldPos;
+                    renderMultiBoard();
+                    animatePawnMovement(playerIdx, oldPos, finalPos, () => {
+                        cp.position = finalPos;
+                        renderMultiBoard();
+                        updateMultiTurnUI();
+                    });
+                }
+            }
+
+            if (cp.position >= G.maxTiles - 1) {
+                cp.position = G.maxTiles - 1;
+                cp.finished = true;
+                cp.finishOrder = G.players.filter(p => p.finished).length;
+                document.getElementById('diceDisplay').textContent = '🏆 ' + cp.emoji + ' ' + cp.name + ' FINISHED!';
+            }
+
+            const allFinished = G.players.every(p => p.finished);
+            if (allFinished) {
+                G.isFinished = true;
+                clearInterval(gameTimer);
+                gameTimer = null;
+                gameActive = false;
+                setTimeout(() => endMultiGame(), 1500);
+                updateMultiTurnUI();
+                return;
+            }
+
+            setTimeout(() => {
+                if (!G.isFinished && gameActive) {
+                    nextTurn();
+                    updateMultiTurnUI();
+                    resetCard();
+                }
+            }, 400);
+
+            updateMultiTurnUI();
+        }
+
+        function nextTurn() {
+            const total = G.players.length;
+            let next = (G.currentPlayerIndex + 1) % total;
+            let attempts = 0;
+            while (G.players[next].finished && attempts < total) {
+                next = (next + 1) % total;
+                attempts++;
+            }
+            if (attempts >= total) {
+                G.isFinished = true;
+                clearInterval(gameTimer);
+                gameTimer = null;
+                gameActive = false;
+                setTimeout(() => endMultiGame(), 1000);
+                return;
+            }
+            G.currentPlayerIndex = next;
+            G.answered = false;
+            G.wagerActive = false;
+            G.cardPicked = false;
+        }
+
+        // ================================================================
+        //  END GAME
+        // ================================================================
+        function endMultiGame() {
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = null;
+            gameActive = false;
+            G.gameOver = true;
+            const sorted = [...G.players].sort((a, b) => {
+                if (a.finished && !b.finished) return -1;
+                if (!a.finished && b.finished) return 1;
+                if (a.finished && b.finished) return (a.finishOrder || 0) - (b.finishOrder || 0);
+                return (b.position - a.position) || (b.rp - a.rp);
+            });
+            if (!isMultiplayer && currentUser) {
+                const p = G.players[0];
+                currentUser.totalGames = (currentUser.totalGames || 0) + 1;
+                if (p.finished) currentUser.totalWins = (currentUser.totalWins || 0) + 1;
+                currentUser.totalRP = (currentUser.totalRP || 0) + p.rp;
+                if (p.streak > (currentUser.bestStreak || 0)) currentUser.bestStreak = p.streak;
+                if (p.wrongQuestions && p.wrongQuestions.length > 0) {
+                    if (!currentUser.wrongHistory) currentUser.wrongHistory = [];
+                    currentUser.wrongHistory.push(...p.wrongQuestions);
+                }
+                const idx = store.users.findIndex(u => u.id === currentUser.id);
+                if (idx > -1) store.users[idx] = currentUser;
+                setStore(store);
+            }
+            const container = document.getElementById('resultContent');
+            let html = `<div class="result-grid">`;
+            sorted.forEach((p, i) => {
+                const isWinner = i === 0;
+                const medal = isWinner ? '👑' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `#${i+1}`));
+                const status = p.finished ? '✅ Finished' : '⏰ Time\'s Up';
+                html += `
+                    <div class="result-card ${isWinner ? 'winner' : ''}">
+                        <div class="r-name">${p.emoji} ${p.name}</div>
+                        <div class="r-pos">${medal} ${status}</div>
+                        <div class="r-rp">${p.rp} RP</div>
+                        <div class="r-stats">✅ ${p.correct} ❌ ${p.wrong} 🔥 ${p.streak}</div>
+                        ${isWinner ? '<div class="winner-badge">🏆 WINNER</div>' : ''}
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            if (!isMultiplayer) {
+                html +=
+                    `<div style="text-align:center;font-size:12px;color:var(--dim);margin-top:4px;">Solo mode — RP added to your account.</div>`;
+            }
+            container.innerHTML = html;
+            const reviewSection = document.getElementById('reviewSection');
+            const reviewList = document.getElementById('reviewList');
+            const allWrong = G.players.flatMap(p => p.wrongQuestions || []);
+            if (allWrong.length > 0) {
+                reviewSection.classList.remove('hidden');
+                reviewList.innerHTML = allWrong.map((w, i) =>
+                    `<div class="review-item">
+                        <div class="q">${i+1}. ${w.question}</div>
+                        <div>✅ Correct: <span class="correct">${w.correctAnswer}</span></div>
+                        <div>❌ Your answer: <span class="your">${w.yourAnswer !== undefined ? 'Option ' + String.fromCharCode(65 + w.yourAnswer) : 'Unknown'}</span></div>
+                    </div>`
+                ).join('');
+            } else {
+                reviewSection.classList.add('hidden');
+            }
+            navigateTo('resultPage');
+        }
+
+        function exitGame() {
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = null;
+            gameActive = false;
+            G.gameOver = true;
+            navigateTo('dashboardPage');
+            renderDashboard();
+            playClick();
+        }
+
+        // ================================================================
+        //  NAVIGATION
+        // ================================================================
+        function navigateTo(pageId) {
+            playClick();
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            const target = document.getElementById(pageId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === pageId);
+            });
+
+            if (pageId === 'dashboardPage' && currentUser) renderDashboard();
+            if (pageId === 'leaderboardPage') renderLeaderboard();
+            if (pageId === 'shopPage') renderShop();
+            if (pageId === 'inventoryPage') renderInventory();
+            if (pageId === 'profilePage') renderProfile();
+            if (pageId === 'authPage') {
+                bottomNav.classList.add('hidden-nav');
+            }
+            // Update game page tile display if coming from multiplayer
+            if (pageId === 'gamePage' && G && G.maxTiles) {
+                const cp = G.players && G.players[G.currentPlayerIndex];
+                if (cp) {
+                    document.getElementById('turnPos').textContent = 'Tile ' + (cp.position + 1) + '/' + G.maxTiles;
+                }
+                const mins = Math.floor(timerSeconds / 60);
+                const secs = timerSeconds % 60;
+                document.getElementById('timerText').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+            }
+        }
+
+        // ================================================================
+        //  MUSIC
+        // ================================================================
+        function toggleMusic() {
+            const btn = document.getElementById('musicToggle');
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicPlaying = false;
+                btn.textContent = '🔇';
+            } else {
+                bgMusic.play().catch(() => {});
+                musicPlaying = true;
+                btn.textContent = '🔊';
+            }
+            playClick();
+        }
+        document.addEventListener('click', () => {
+            if (!musicPlaying) {
+                bgMusic.play().catch(() => {});
+                musicPlaying = true;
+                document.getElementById('musicToggle').textContent = '🔊';
+            }
+        }, { once: true });
+
+        // ================================================================
+        //  LEADERBOARD
+        // ================================================================
+        let lbMode = 'major';
+
+        function renderLeaderboard() {
+            const container = document.getElementById('lbContent');
+            if (lbMode === 'major') {
+                const major = currentUser ? currentUser.major : 'Computer Science';
+                const filtered = store.users.filter(u => u.major === major)
+                    .map(u => ({ ...u, totalRP: u.totalRP || 0 }))
+                    .sort((a, b) => b.totalRP - a.totalRP);
+                let html = `<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">🏅 Major: ${major}</div>`;
+                if (filtered.length === 0) html +=
+                    '<div class="text-dim text-center" style="padding:16px;">No players yet.</div>';
+                filtered.forEach((u, i) => {
+                    const isRival = currentUser && u.id === currentUser.rival;
+                    const cls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+                    const medal = i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    html += `
+                        <div class="lb-item ${cls} ${isRival?'rival-highlight':''}" onclick="setRival('${u.id}')" style="cursor:pointer;">
+                            <span class="rank">${medal}</span>
+                            <span class="name">${u.avatar||'🎓'} ${u.name}</span>
+                            <span class="major-tag">${u.major}</span>
+                            <span class="score">${u.totalRP||0} RP</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                const filtered = store.users.filter(u => (u.bestStreak || 0) >= 10)
+                    .sort((a, b) => (b.bestStreak || 0) - (a.bestStreak || 0));
+                let html =
+                `<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">🎰 Hall of Fame (Streak ≥ 10)</div>`;
+                if (filtered.length === 0) html +=
+                    '<div class="text-dim text-center" style="padding:16px;">No legends yet!</div>';
+                filtered.forEach((u, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    html += `
+                        <div class="lb-item ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
+                            <span class="rank">${medal}</span>
+                            <span class="name">${u.avatar||'🎓'} ${u.name}</span>
+                            <span class="major-tag">${u.major}</span>
+                            <span class="score">🔥 ${u.bestStreak||0}</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        }
+
+        function switchLB(mode) {
+            lbMode = mode;
+            document.querySelectorAll('.lb-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === mode);
+            });
+            renderLeaderboard();
+            playClick();
+        }
+
+        function setRival(playerId) {
+            if (!currentUser) return;
+            if (currentUser.id === playerId) return alert("You can't rival yourself!");
+            const target = store.users.find(u => u.id === playerId);
+            if (!target) return;
+            if (currentUser.major !== target.major) return alert("Rival must be from the same major!");
+            currentUser.rival = playerId;
+            const idx = store.users.findIndex(u => u.id === currentUser.id);
+            if (idx > -1) store.users[idx] = currentUser;
+            setStore(store);
+            renderDashboard();
+            renderLeaderboard();
+            alert(`✅ Rival set: ${target.avatar||'🎓'} ${target.name}`);
+            playClick();
+        }
+
+        // ================================================================
+        //  INIT
+        // ================================================================
+        (function init() {
+            const storeData = initState();
+            const storedUser = storeData.users ? storeData.users[0] : null;
+            if (storedUser) {
+                currentUser = storedUser;
+                bottomNav.classList.remove('hidden-nav');
+                navigateTo('dashboardPage');
+                renderDashboard();
+            } else {
+                bottomNav.classList.add('hidden-nav');
+                navigateTo('authPage');
+                showLogin();
+            }
+        })();
+    </script>
+</body>
+</html>
