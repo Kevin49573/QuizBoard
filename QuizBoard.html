@@ -65,6 +65,47 @@
                 transform: translateY(0);
             }
         }
+        .tile-notification {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 10px 16px;
+            border-radius: 16px;
+            margin: 6px 0 8px;
+            background: #1e2538;
+            border: 2px solid #2d3748;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .tile-notification.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .tile-notification.gold {
+            border-color: var(--gold);
+            background: #3d3400;
+            color: var(--gold);
+        }
+        .tile-notification.swamp {
+            border-color: var(--neon-purple);
+            background: #2d1045;
+            color: var(--neon-purple);
+        }
+        .tile-notification.mystery {
+            border-color: var(--neon-blue);
+            background: #1a3a3a;
+            color: var(--neon-blue);
+        }
+        .tile-notification.finish {
+            border-color: var(--gold);
+            background: var(--gold);
+            color: #0b0d15;
+        }
 
         /* ----- BUTTONS ----- */
         .btn {
@@ -833,6 +874,65 @@
             }
         }
 
+        /* ----- IN-GAME ITEM PANEL ----- */
+        .game-actions {
+            display: flex;
+            gap: 8px;
+            margin: 4px 0 6px;
+        }
+        .game-actions .btn {
+            padding: 8px 12px;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .inventory-panel {
+            background: #1e2538;
+            border-radius: 14px;
+            padding: 10px;
+            margin-top: 4px;
+            border: 1px solid #2d3748;
+        }
+        .inventory-panel .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .inventory-panel .header span {
+            font-weight: 600;
+        }
+        .inventory-item-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .inventory-item-list .item-box {
+            background: #0f131f;
+            padding: 6px 10px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #2d3748;
+            flex: 1;
+            min-width: 60px;
+        }
+        .inventory-item-list .item-box .icon {
+            font-size: 18px;
+        }
+        .inventory-item-list .item-box .name {
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .inventory-item-list .item-box .count {
+            color: var(--gold);
+            font-size: 10px;
+        }
+        .inventory-item-list .item-box .use-btn {
+            margin-top: 2px;
+            font-size: 10px;
+            padding: 2px 8px;
+        }
+
         /* ----- RESULT ----- */
         .result-grid {
             display: grid;
@@ -1120,6 +1220,16 @@
                 font-size: 12px;
                 padding: 4px 8px;
             }
+            .inventory-item-list .item-box {
+                min-width: 50px;
+                padding: 4px 6px;
+            }
+            .inventory-item-list .item-box .icon {
+                font-size: 16px;
+            }
+            .inventory-item-list .item-box .name {
+                font-size: 9px;
+            }
         }
         @media (max-width: 380px) {
             #board {
@@ -1342,7 +1452,21 @@
                 </div>
             </div>
             <div class="dice-result" id="diceDisplay">🎲 Pick a card!</div>
-            <button class="btn btn-outline" style="margin-top:4px;background:#1e2538;padding:10px;" onclick="exitGame()">🚪 Exit Game</button>
+            <div id="tileNotification" class="tile-notification hidden"></div>
+
+            <!-- In-Game Item Usage -->
+            <div class="game-actions">
+                <button class="btn btn-outline" id="useItemBtn" onclick="toggleInGameItems()">🎒 Use Item</button>
+                <button class="btn btn-outline" style="background:#1e2538;" onclick="exitGame()">🚪 Exit</button>
+            </div>
+            <div id="inGameItemPanel" class="hidden" style="background:#1e2538;border-radius:14px;padding:10px;margin-top:4px;border:1px solid #2d3748;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-weight:600;">🎒 Inventory</span>
+                    <button class="btn btn-sm btn-outline" onclick="closeInGameItems()">✕</button>
+                </div>
+                <div id="inGameItemList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+                <div id="inGameItemMsg" style="font-size:12px;color:var(--dim);text-align:center;margin-top:4px;"></div>
+            </div>
         </div>
 
         <!-- RESULT -->
@@ -1421,7 +1545,7 @@
             }
         }
 
-        function playBeep(freq, duration, type = 'sine', volume = 0.3) {
+        function playBeep(freq, duration, type = 'sine', volume = 0.1) {
             try {
                 const ctx = ensureAudio();
                 if (!ctx) return;
@@ -1463,74 +1587,140 @@
         const QUESTION_BANK = {
             "Computer Science": {
                 easy: [
-                    { q: "What does HTML stand for?", o: ["Hyper Text Markup Language", "High Tech Machine Language",
-                            "Hyper Transfer Markup Logic", "Home Tool Markup Language"
-                        ], a: 0 },
-                    { q: "What is the function of `console.log()`?", o: ["Display output to the console",
-                            "Save data to a file", "Send data to a server", "Delete a variable"
-                        ], a: 0 },
-                    { q: "What is a variable in programming?", o: ["A container for storing data", "A function for looping",
-                            "A numeric data type", "A compilation process"
-                        ], a: 0 },
+                    { q: "What does HTML stand for?", o: ["Hyper Text Markup Language", "High Tech Machine Language", "Hyper Transfer Markup Logic", "Home Tool Markup Language"], a: 0 },
+                    { q: "Which data structure uses LIFO (Last In First Out)?", o: ["Queue", "Stack", "Array", "Linked List"], a: 1 },
+                    { q: "What is the correct file extension for a Java source file?", o: [".java", ".class", ".jar", ".jav"], a: 0 },
+                    { q: "Which operator is used for equality comparison in JavaScript?", o: ["==", "=", "===", "!="], a: 2 },
+                    { q: "What is the default value of a boolean variable in Java?", o: ["true", "false", "null", "0"], a: 1 }
                 ],
                 medium: [
-                    { q: "What is the main difference between `var` and `let` in JavaScript?",
-                        o: ["Scope (block vs function)", "Execution speed", "Memory size", "No difference"
-                        ], a: 0 },
-                    { q: "What is OOP?", o: ["Object-Oriented Programming", "Online Operating Protocol",
-                            "Output Optimization Process", "Open Operation Platform"
-                        ], a: 0 },
-                    { q: "What is the purpose of an API?", o: ["To connect applications", "To manage databases",
-                            "To design UI", "To compress files"
-                        ], a: 0 },
+                    { q: "What is the time complexity of binary search on a sorted array?", o: ["O(n)", "O(log n)", "O(n log n)", "O(1)"], a: 1 },
+                    { q: "Which of the following is not an OOP principle?", o: ["Encapsulation", "Inheritance", "Polymorphism", "Compilation"], a: 3 },
+                    { q: "What is the difference between `var` and `let` in JavaScript?", o: ["Scope", "Hoisting", "Both A and B", "None"], a: 2 },
+                    { q: "Which HTTP method is idempotent?", o: ["POST", "PUT", "PATCH", "DELETE"], a: 1 },
+                    { q: "What is a primary key in a database?", o: ["A unique identifier for a record", "A foreign key", "An index", "A table name"], a: 0 }
                 ],
                 hard: [
-                    { q: "What is the difference between a process and a thread?",
-                        o: ["Processes have separate memory, threads share memory", "Threads are heavier than processes",
-                            "Process = Thread", "No difference"
-                        ], a: 0 },
-                    { q: "What is garbage collection?", o: ["Automatic memory management", "Collecting digital waste",
-                            "Data analysis", "File encryption"
-                        ], a: 0 },
-                    { q: "What is a deadlock?", o: ["Two processes waiting for each other", "CPU hang",
-                            "Syntax error", "Data loss"
-                        ], a: 0 },
+                    { q: "What is the difference between a process and a thread?", o: ["Processes share memory, threads do not", "Threads share memory, processes do not", "Both are the same", "None"], a: 1 },
+                    { q: "What is garbage collection in programming?", o: ["Manual memory deallocation", "Automatic memory management", "Code optimization", "Error handling"], a: 1 },
+                    { q: "What is a deadlock?", o: ["Two processes waiting for each other", "CPU overheating", "Memory leak", "Syntax error"], a: 0 },
+                    { q: "What does the 'volatile' keyword do in Java?", o: ["Ensures visibility of changes across threads", "Prevents serialization", "Makes a variable constant", "Optimizes loops"], a: 0 },
+                    { q: "Which algorithm is used to find the shortest path in a weighted graph?", o: ["BFS", "DFS", "Dijkstra's algorithm", "A* algorithm"], a: 2 }
                 ]
             },
             "Business": {
                 easy: [
-                    { q: "What is BEP?", o: ["Break-even point", "Maximum profit", "Total loss", "Selling price"],
-                        a: 0 },
-                    { q: "What is the marketing mix (4P)?", o: ["Product, Price, Place, Promotion",
-                            "People, Process, Physical, Profit", "Plan, Prepare, Produce, Present",
-                            "Purpose, Practice, Performance, Profit"
-                        ], a: 0 },
-                    { q: "What is a business plan?", o: ["A business roadmap", "A financial report",
-                            "Competitor analysis", "HR strategy"
-                        ], a: 0 },
+                    { q: "What is the break-even point (BEP)?", o: ["Total revenue equals total cost", "Maximum profit point", "Minimum sales", "Market share"], a: 0 },
+                    { q: "What does SWOT stand for?", o: ["Strengths, Weaknesses, Opportunities, Threats", "Sales, Wages, Output, Trade", "System, Work, Order, Task", "Strategy, Win, Offer, Team"], a: 0 },
+                    { q: "What is a business plan?", o: ["A document outlining business goals and strategies", "A financial report", "A marketing brochure", "A legal contract"], a: 0 },
+                    { q: "What is the marketing mix (4Ps)?", o: ["Product, Price, Place, Promotion", "People, Process, Physical, Profit", "Plan, Prepare, Produce, Present", "Purpose, Practice, Performance, Profit"], a: 0 },
+                    { q: "What is a balance sheet?", o: ["A statement of financial position", "An income statement", "A cash flow statement", "A statement of changes in equity"], a: 0 }
                 ],
                 medium: [
-                    { q: "What is SWOT analysis?", o: ["Strengths, Weaknesses, Opportunities, Threats",
-                            "Sales, Wages, Output, Trade", "System, Work, Order, Task", "Strategy, Win, Offer, Team"
-                        ], a: 0 },
-                    { q: "What is supply chain management?", o: ["Management of the flow of goods", "Marketing management",
-                            "Resource management", "Risk management"
-                        ], a: 0 },
-                    { q: "What is a balance sheet?", o: ["Statement of financial position", "Income statement",
-                            "Cash flow statement", "Statement of changes in equity"
-                        ], a: 0 },
+                    { q: "What is supply chain management?", o: ["Management of the flow of goods and services", "Marketing strategy", "Human resource planning", "Financial analysis"], a: 0 },
+                    { q: "What is the difference between a merger and an acquisition?", o: ["Merger combines equals, acquisition buys", "Acquisition combines equals, merger buys", "They are the same", "None"], a: 0 },
+                    { q: "What is EBITDA?", o: ["Earnings before interest, taxes, depreciation, and amortization", "Net profit", "Gross income", "Free cash flow"], a: 0 },
+                    { q: "What is the Blue Ocean Strategy?", o: ["Creating new market space with no competition", "Price war", "Market segmentation", "Cost leadership"], a: 0 },
+                    { q: "What is a stakeholder?", o: ["Any person or entity with an interest in a business", "Only shareholders", "Employees only", "Customers only"], a: 0 }
                 ],
                 hard: [
-                    { q: "What is the difference between a merger and an acquisition?",
-                        o: ["Merger is combining equals, Acquisition is buying", "Acquisition is combining equals, Merger is buying",
-                            "They are the same", "No difference"
-                        ], a: 0 },
-                    { q: "What is the Blue Ocean Strategy?", o: ["Creating a new market space with no competition",
-                            "Low-cost strategy", "Global expansion", "Digitalization strategy"
-                        ], a: 0 },
-                    { q: "What is EBITDA?", o: ["Earnings before interest, taxes, depreciation, and amortization",
-                            "Net profit", "Gross income", "Free cash flow"
-                        ], a: 0 },
+                    { q: "What is a leveraged buyout (LBO)?", o: ["Acquisition using borrowed funds", "Selling company assets", "Merger of equals", "Joint venture"], a: 0 },
+                    { q: "What is the Black-Scholes model used for?", o: ["Options pricing", "Stock valuation", "Bond pricing", "Risk management"], a: 0 },
+                    { q: "What is the difference between a corporation and an LLC?", o: ["Legal structure and liability", "Tax treatment", "Ownership", "All of the above"], a: 3 },
+                    { q: "What is a hostile takeover?", o: ["Acquisition against the target company's wishes", "Friendly acquisition", "Merger", "LBO"], a: 0 },
+                    { q: "What is the efficient market hypothesis?", o: ["Asset prices reflect all available information", "Markets are inefficient", "Prices are random", "Investors are irrational"], a: 0 }
+                ]
+            },
+            "Economics": {
+                easy: [
+                    { q: "What is inflation?", o: ["A general increase in prices", "A decrease in prices", "Stable prices", "Currency devaluation"], a: 0 },
+                    { q: "What does GDP stand for?", o: ["Gross Domestic Product", "Global Development Program", "General Demand Policy", "Government Debt Plan"], a: 0 },
+                    { q: "What is the law of supply and demand?", o: ["Price is determined by supply and demand", "Price is fixed", "Demand is always higher", "Supply is always higher"], a: 0 },
+                    { q: "What is opportunity cost?", o: ["The value of the next best alternative foregone", "Monetary cost", "Sunk cost", "Fixed cost"], a: 0 },
+                    { q: "What is a monopoly?", o: ["A single seller dominates the market", "Many sellers", "Perfect competition", "Oligopoly"], a: 0 }
+                ],
+                medium: [
+                    { q: "What is the difference between monetary and fiscal policy?", o: ["Monetary is central bank, fiscal is government", "Fiscal is central bank, monetary is government", "Both are same", "None"], a: 0 },
+                    { q: "What is elasticity of demand?", o: ["Responsiveness of quantity demanded to price changes", "Total revenue", "Consumer surplus", "Marginal utility"], a: 0 },
+                    { q: "What is a recession?", o: ["Two consecutive quarters of negative GDP growth", "High inflation", "Low unemployment", "Economic boom"], a: 0 },
+                    { q: "What is the multiplier effect?", o: ["An initial spending leads to larger increase in national income", "Doubling of GDP", "Tax cut", "Government spending"], a: 0 },
+                    { q: "What is the Phillips curve?", o: ["Inverse relationship between unemployment and inflation", "Direct relationship", "No relationship", "Trade-off between GDP and inflation"], a: 0 }
+                ],
+                hard: [
+                    { q: "What is the difference between Keynesian and Classical economics?", o: ["Keynesian supports government intervention, Classical supports free markets", "Classical supports intervention", "Both are socialist", "None"], a: 0 },
+                    { q: "What is a liquidity trap?", o: ["Monetary policy becomes ineffective", "High inflation", "Deflation", "Currency appreciation"], a: 0 },
+                    { q: "What is comparative advantage?", o: ["Ability to produce at a lower opportunity cost", "Absolute advantage", "Economies of scale", "Specialization"], a: 0 },
+                    { q: "What is the Laffer Curve?", o: ["Relationship between tax rates and tax revenue", "Supply and demand", "Inflation and unemployment", "GDP growth"], a: 0 },
+                    { q: "What is a rational expectation?", o: ["Economic agents use all available information", "Agents are irrational", "Agents ignore information", "None"], a: 0 }
+                ]
+            },
+            "Electrical Engineering": {
+                easy: [
+                    { q: "What is Ohm's Law?", o: ["V = I × R", "V = I / R", "V = R / I", "V = I + R"], a: 0 },
+                    { q: "What is AC current?", o: ["Alternating current", "Direct current", "Static electricity", "High voltage"], a: 0 },
+                    { q: "What is the function of a resistor?", o: ["To resist current flow", "To store energy", "To convert AC to DC", "To amplify signals"], a: 0 },
+                    { q: "What is a capacitor?", o: ["A device that stores electrical energy", "A device that resists current", "A switch", "A transformer"], a: 0 },
+                    { q: "What is the unit of resistance?", o: ["Ohm", "Volt", "Ampere", "Watt"], a: 0 }
+                ],
+                medium: [
+                    { q: "What is the function of a transformer?", o: ["To change voltage levels", "To change frequency", "To filter current", "To amplify power"], a: 0 },
+                    { q: "What is a diode?", o: ["A semiconductor component that allows current flow in one direction", "A resistor", "A capacitor", "An inductor"], a: 0 },
+                    { q: "What is the difference between a motor and a generator?", o: ["Motor converts electrical to mechanical, generator converts mechanical to electrical", "Both are same", "Motor generates electricity", "Generator consumes electricity"], a: 0 },
+                    { q: "What is power factor?", o: ["Ratio of real power to apparent power", "Ratio of voltage to current", "Ratio of resistance to impedance", "Efficiency"], a: 0 },
+                    { q: "What is a rectifier?", o: ["Converts AC to DC", "Converts DC to AC", "Converts voltage to current", "Amplifies signal"], a: 0 }
+                ],
+                hard: [
+                    { q: "What is a MOSFET?", o: ["Metal-Oxide-Semiconductor Field-Effect Transistor", "A special diode", "A capacitor", "An inductor"], a: 0 },
+                    { q: "What is the Fourier Transform?", o: ["A mathematical transform for frequency domain analysis", "A time domain analysis", "A numerical method", "A statistical tool"], a: 0 },
+                    { q: "What is impedance?", o: ["Total opposition to current in AC circuits", "Resistance in DC", "Reactance", "Admittance"], a: 0 },
+                    { q: "What is the Nyquist criterion?", o: ["Stability criterion for control systems", "Sampling theorem", "Filter design", "Power analysis"], a: 0 },
+                    { q: "What is a microcontroller?", o: ["A small computer on a single IC", "A microprocessor", "A digital signal processor", "A programmable logic device"], a: 0 }
+                ]
+            },
+            "Robotics": {
+                easy: [
+                    { q: "What is a sensor?", o: ["A device that detects environmental changes", "A motor", "A microcontroller", "A power supply"], a: 0 },
+                    { q: "What is an actuator?", o: ["A device that converts energy into motion", "A sensor", "A controller", "A power source"], a: 0 },
+                    { q: "What is a robot?", o: ["A programmable machine", "Just a mechanical arm", "An AI system", "A toy"], a: 0 },
+                    { q: "What is a servo motor?", o: ["A motor with position feedback", "A DC motor", "A stepper motor", "A brushless motor"], a: 0 },
+                    { q: "What is a PID controller?", o: ["Proportional-Integral-Derivative controller", "A simple on-off controller", "A fuzzy controller", "An adaptive controller"], a: 0 }
+                ],
+                medium: [
+                    { q: "What is kinematics in robotics?", o: ["Study of motion without considering forces", "Study of forces", "Study of energy", "Study of materials"], a: 0 },
+                    { q: "What is a joint in robotics?", o: ["A connection between two links", "A motor", "A sensor", "A controller"], a: 0 },
+                    { q: "What is inverse kinematics?", o: ["Determining joint angles from end position", "Determining end position from joint angles", "Speed control", "Path planning"], a: 0 },
+                    { q: "What is a degree of freedom?", o: ["The number of independent motions a robot can perform", "A motor", "A joint", "A sensor"], a: 0 },
+                    { q: "What is a mobile robot?", o: ["A robot that can move", "A stationary robot", "A humanoid robot", "An industrial robot"], a: 0 }
+                ],
+                hard: [
+                    { q: "What is SLAM?", o: ["Simultaneous Localization and Mapping", "Sensor Logic Array Module", "System Level Automation Machine", "Simple Linear Actuator Mechanism"], a: 0 },
+                    { q: "What is ROS (Robot Operating System)?", o: ["A middleware framework for robots", "A programming language", "A real-time operating system", "A driver"], a: 0 },
+                    { q: "What is a haptic interface?", o: ["A system that provides tactile feedback", "A visual system", "An audio system", "A motion sensor"], a: 0 },
+                    { q: "What is computer vision in robotics?", o: ["Processing visual data to understand the environment", "Image compression", "Video streaming", "Display technology"], a: 0 },
+                    { q: "What is a control system?", o: ["A system that manages and regulates behavior of a robot", "A power supply", "A communication system", "A database"], a: 0 }
+                ]
+            },
+            "Mechanical Engineering": {
+                easy: [
+                    { q: "What is Newton's First Law?", o: ["An object at rest stays at rest unless acted upon", "F = ma", "Action = Reaction", "Energy conservation"], a: 0 },
+                    { q: "What is a lever?", o: ["A simple machine for lifting", "A cutting tool", "A gear", "A pulley"], a: 0 },
+                    { q: "What is force?", o: ["A push or pull", "Energy", "Power", "Pressure"], a: 0 },
+                    { q: "What is stress?", o: ["Force per unit area", "Strain", "Pressure", "Torque"], a: 0 },
+                    { q: "What is a gear?", o: ["A rotating machine part with teeth", "A belt", "A chain", "A pulley"], a: 0 }
+                ],
+                medium: [
+                    { q: "What is the difference between stress and strain?", o: ["Stress is force per area, strain is deformation", "Stress is deformation, strain is force", "Both are same", "None"], a: 0 },
+                    { q: "What is a gear ratio?", o: ["Ratio of rotational speeds", "Ratio of torques", "Ratio of powers", "Ratio of diameters"], a: 0 },
+                    { q: "What is thermodynamics?", o: ["Study of heat and work", "Study of motion", "Study of electricity", "Study of materials"], a: 0 },
+                    { q: "What is a beam?", o: ["A structural element that resists bending", "A column", "A truss", "A foundation"], a: 0 },
+                    { q: "What is a cam?", o: ["A rotating component that converts rotary motion to linear motion", "A gear", "A belt", "A chain"], a: 0 }
+                ],
+                hard: [
+                    { q: "What is the Carnot cycle?", o: ["An ideal thermodynamic cycle", "A diesel cycle", "A gas turbine cycle", "A refrigeration cycle"], a: 0 },
+                    { q: "What is Finite Element Analysis (FEA)?", o: ["A numerical method for simulation", "An experimental method", "An analytical method", "A statistical method"], a: 0 },
+                    { q: "What is fatigue failure?", o: ["Failure due to cyclic loading", "Failure due to corrosion", "Failure due to high temperature", "Failure due to impact"], a: 0 },
+                    { q: "What is a turbine?", o: ["A machine that converts fluid energy into mechanical energy", "A pump", "A compressor", "A generator"], a: 0 },
+                    { q: "What is a heat exchanger?", o: ["A device that transfers heat between two fluids", "A boiler", "A radiator", "A condenser"], a: 0 }
                 ]
             }
         };
@@ -1972,7 +2162,7 @@
         }
 
         // ================================================================
-        //  GENERATE BOARD
+        //  GENERATE BOARD - MULTIPLAYER GETS MORE UNIQUE TILES
         // ================================================================
         function generateBoardLayout(totalTiles) {
             const tiles = new Array(totalTiles).fill('normal');
@@ -1982,11 +2172,20 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [indices[i], indices[j]] = [indices[j], indices[i]];
             }
+            // Tentukan jumlah special tile berdasarkan total tiles
+            let goldCount, swampCount, mysteryCount;
+            if (totalTiles <= 15) {
+                goldCount = 2; swampCount = 2; mysteryCount = 2;
+            } else if (totalTiles <= 30) {
+                goldCount = 3; swampCount = 3; mysteryCount = 3;
+            } else {
+                // Multiplayer 50 tiles: lebih banyak unique tile
+                goldCount = 5; swampCount = 5; mysteryCount = 5;
+            }
             const assign = [];
-            // More special tiles for 50-tile board (3 of each instead of 2)
-            for (let i = 0; i < 3; i++) assign.push('gold');
-            for (let i = 0; i < 3; i++) assign.push('purple');
-            for (let i = 0; i < 3; i++) assign.push('mystery');
+            for (let i = 0; i < goldCount; i++) assign.push('gold');
+            for (let i = 0; i < swampCount; i++) assign.push('purple');
+            for (let i = 0; i < mysteryCount; i++) assign.push('mystery');
             for (let i = assign.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [assign[i], assign[j]] = [assign[j], assign[i]];
@@ -2016,6 +2215,16 @@
             }, 80);
         }
 
+        // ================================================================
+        //  NOTIFICATION - PERMANENT (NO TIMEOUT)
+        // ================================================================
+        function showTileNotification(message, type) {
+            const el = document.getElementById('tileNotification');
+            el.textContent = message;
+            el.className = 'tile-notification show ' + type;
+            // Tidak ada setTimeout - notifikasi tetap terlihat
+        }
+
         function animatePawnMovement(playerIndex, fromPos, toPos, callback) {
             let current = fromPos;
             const totalSteps = toPos - fromPos;
@@ -2038,6 +2247,96 @@
         }
 
         // ================================================================
+        //  IN-GAME ITEM USAGE
+        // ================================================================
+        function toggleInGameItems() {
+            const panel = document.getElementById('inGameItemPanel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                renderInGameItems();
+            }
+            playClick();
+        }
+
+        function closeInGameItems() {
+            document.getElementById('inGameItemPanel').classList.add('hidden');
+            document.getElementById('inGameItemMsg').textContent = '';
+            playClick();
+        }
+
+        function renderInGameItems() {
+            const p = currentUser;
+            if (!p) return;
+            const inv = p.inventory || {};
+            const container = document.getElementById('inGameItemList');
+            container.innerHTML = '';
+            let hasItems = false;
+            for (const [key, count] of Object.entries(inv)) {
+                const item = store.shopItems[key];
+                if (!item || count === 0) continue;
+                hasItems = true;
+                const div = document.createElement('div');
+                div.className = 'item-box';
+                div.innerHTML = `
+                    <div class="icon">${item.icon}</div>
+                    <div class="name">${item.name}</div>
+                    <div class="count">x${count}</div>
+                    <button class="btn btn-sm btn-gold use-btn" onclick="useItemInGame('${key}')">Use</button>
+                `;
+                container.appendChild(div);
+            }
+            if (!hasItems) {
+                container.innerHTML = '<span class="text-dim" style="font-size:13px;">No items available. Visit the Shop!</span>';
+            }
+            document.getElementById('inGameItemMsg').textContent = '';
+        }
+
+        function useItemInGame(key) {
+            const p = currentUser;
+            if (!p) return;
+            const item = store.shopItems[key];
+            if (!item) return;
+            if ((p.inventory && p.inventory[key] || 0) <= 0) {
+                document.getElementById('inGameItemMsg').textContent = '❌ You don\'t have this item!';
+                document.getElementById('inGameItemMsg').style.color = 'var(--danger)';
+                return;
+            }
+            if (!gameActive || !G || !G.players || G.players.length === 0) {
+                document.getElementById('inGameItemMsg').textContent = '❌ You can only use items during a game!';
+                document.getElementById('inGameItemMsg').style.color = 'var(--danger)';
+                return;
+            }
+            const cp = G.players[G.currentPlayerIndex];
+            if (!cp) {
+                document.getElementById('inGameItemMsg').textContent = '❌ Not your turn!';
+                document.getElementById('inGameItemMsg').style.color = 'var(--danger)';
+                return;
+            }
+            // Terapkan efek
+            if (key === 'loadedDice') {
+                cp.activeItems.loadedDice = true;
+                document.getElementById('diceDisplay').textContent = '🎲 Loaded Dice active! (roll ≥ 4)';
+            } else if (key === 'shield') {
+                cp.activeItems.shield = true;
+                document.getElementById('diceDisplay').textContent = '🛡️ Shield active! (negates wrong penalty)';
+            } else if (key === 'spyglass') {
+                cp.activeItems.spyglass = true;
+                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! (reveals card levels)';
+            }
+            p.inventory[key] = (p.inventory[key] || 0) - 1;
+            const idx = store.users.findIndex(u => u.id === p.id);
+            if (idx > -1) store.users[idx] = p;
+            setStore(store);
+            document.getElementById('inGameItemMsg').textContent = `✅ ${item.name} activated!`;
+            document.getElementById('inGameItemMsg').style.color = 'var(--success)';
+            renderInGameItems();
+            renderDashboard();
+            renderInventory();
+            renderShop();
+            playClick();
+        }
+
+        // ================================================================
         //  START GAME (Solo)
         // ================================================================
         function startSinglePlayer(mode) {
@@ -2056,6 +2355,7 @@
                 isFinished: false,
                 gameOver: false,
                 usedCards: [false, false, false],
+                usedQuestions: { easy: [], medium: [], hard: [] },
                 cardLevels: [],
                 answered: false,
                 currentPlayerIndex: 0,
@@ -2121,6 +2421,7 @@
                 isFinished: false,
                 gameOver: false,
                 usedCards: [false, false, false],
+                usedQuestions: { easy: [], medium: [], hard: [] },
                 cardLevels: [],
                 answered: false,
                 currentPlayerIndex: 0,
@@ -2280,6 +2581,10 @@
             const back = document.getElementById('mainCardBack');
             back.innerHTML = '';
             document.getElementById('diceDisplay').textContent = '🎲 Pick a card!';
+            // Sembunyikan notifikasi tile
+            const el = document.getElementById('tileNotification');
+            el.className = 'tile-notification hidden';
+            el.textContent = '';
         }
 
         function pickCard(index) {
@@ -2327,7 +2632,27 @@
                 document.getElementById('diceDisplay').textContent = '⚠️ No questions for level!';
                 return;
             }
-            const qData = levelPool[Math.floor(Math.random() * levelPool.length)];
+
+            // Pastikan G.usedQuestions ada
+            if (!G.usedQuestions) G.usedQuestions = { easy: [], medium: [], hard: [] };
+            if (!G.usedQuestions[pickedLevel]) G.usedQuestions[pickedLevel] = [];
+
+            const usedIndices = G.usedQuestions[pickedLevel];
+            const available = levelPool.filter((_, idx) => !usedIndices.includes(idx));
+
+            let qData;
+            if (available.length > 0) {
+                const rand = Math.floor(Math.random() * available.length);
+                qData = available[rand];
+                const originalIndex = levelPool.indexOf(qData);
+                G.usedQuestions[pickedLevel].push(originalIndex);
+            } else {
+                // Reset jika semua soal sudah habis
+                G.usedQuestions[pickedLevel] = [];
+                qData = levelPool[Math.floor(Math.random() * levelPool.length)];
+                const originalIndex = levelPool.indexOf(qData);
+                G.usedQuestions[pickedLevel].push(originalIndex);
+            }
 
             const back = document.getElementById('mainCardBack');
             const levelLabel = pickedLevel.toUpperCase();
@@ -2451,6 +2776,14 @@
 
                 if (level === 'hard') steps += 1;
 
+                // ============================================================
+                //  BATAS LANGKAH MAKSIMAL 5 UNTUK SOLO SPRINT
+                // ============================================================
+                if (G.mode === 'sprint') {
+                    steps = Math.min(steps, 5);
+                }
+                // ============================================================
+
                 if (level === 'medium') {
                     const opponents = G.players.filter(p => p.id !== cp.id && !p.finished);
                     if (opponents.length > 0) {
@@ -2469,7 +2802,8 @@
                     }
                 }
 
-                if (level === 'hard' && !wager) {
+                // Teleport HANYA untuk solo mode, bukan multiplayer
+                if (level === 'hard' && !wager && !isMultiplayer) {
                     const sorted = [...G.players].filter(p => !p.finished).sort((a, b) => b.position - a.position);
                     if (sorted.length > 0 && sorted[0].id !== cp.id) {
                         const leader = sorted[0];
@@ -2494,23 +2828,23 @@
                 const currentTile = Math.min(cp.position, G.maxTiles - 1);
                 if (layout[currentTile] === 'mystery') {
                     const effects = [
-                        { msg: '🎁 +10 RP!', fn: () => { cp.rp += 10; } },
-                        { msg: '🚀 +2 steps!', fn: () => { cp.position = Math.min(G.maxTiles - 1, cp.position + 2); } },
-                        { msg: '⏰ -10 seconds!', fn: () => { timerSeconds = Math.max(0, timerSeconds - 10); } },
-                        { msg: '🛡️ Shield gained!', fn: () => { if (cp.activeItems) cp.activeItems.shield = true; } },
+                        { msg: '🎁 +10 RP!', fn: () => { cp.rp += 10; }, cls: 'mystery' },
+                        { msg: '🚀 +2 steps!', fn: () => { cp.position = Math.min(G.maxTiles - 1, cp.position + 2); }, cls: 'mystery' },
+                        { msg: '⏰ -10 seconds!', fn: () => { timerSeconds = Math.max(0, timerSeconds - 10); }, cls: 'mystery' },
+                        { msg: '🛡️ Shield gained!', fn: () => { if (cp.activeItems) cp.activeItems.shield = true; }, cls: 'mystery' },
                     ];
                     const effect = effects[Math.floor(Math.random() * effects.length)];
                     effect.fn();
-                    document.getElementById('diceDisplay').textContent += ' ❓ Mystery: ' + effect.msg;
+                    showTileNotification('❓ Mystery: ' + effect.msg, 'mystery');
                 }
 
                 if (layout[currentTile] === 'gold') {
                     cp.position = Math.min(G.maxTiles - 1, cp.position + 3);
-                    document.getElementById('diceDisplay').textContent += ' ✨ Gold +3!';
+                    showTileNotification('🌟 Gold Tile! +3 steps!', 'gold');
                 }
                 if (layout[currentTile] === 'purple') {
                     cp.isSlowed = true;
-                    document.getElementById('diceDisplay').textContent += ' 🟣 Entered Swamp!';
+                    showTileNotification('🌀 Swamp Tile! Slowed next turn!', 'swamp');
                 }
 
                 if (G.extraSwamps && G.extraSwamps.includes(currentTile)) {
@@ -2695,6 +3029,7 @@
             gameTimer = null;
             gameActive = false;
             G.gameOver = true;
+            closeInGameItems();
             navigateTo('dashboardPage');
             renderDashboard();
             playClick();
