@@ -1545,7 +1545,7 @@
             }
         }
 
-        function playBeep(freq, duration, type = 'sine', volume = 0.1) {
+        function playBeep(freq, duration, type = 'sine', volume = 0.3) {
             try {
                 const ctx = ensureAudio();
                 if (!ctx) return;
@@ -2316,12 +2316,15 @@
             if (key === 'loadedDice') {
                 cp.activeItems.loadedDice = true;
                 document.getElementById('diceDisplay').textContent = '🎲 Loaded Dice active! (roll ≥ 4)';
+                showTileNotification('🎲 Loaded Dice activated! Your next roll will be ≥ 4.', 'gold');
             } else if (key === 'shield') {
                 cp.activeItems.shield = true;
                 document.getElementById('diceDisplay').textContent = '🛡️ Shield active! (negates wrong penalty)';
+                showTileNotification('🛡️ Shield activated! You\'re protected from one wrong answer.', 'gold');
             } else if (key === 'spyglass') {
                 cp.activeItems.spyglass = true;
-                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! (reveals card levels)';
+                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! Next card shows difficulty!';
+                showTileNotification('🔭 Spyglass activated! Tap the card to see its difficulty before opening.', 'mystery');
             }
             p.inventory[key] = (p.inventory[key] || 0) - 1;
             const idx = store.users.findIndex(u => u.id === p.id);
@@ -2357,6 +2360,8 @@
                 usedCards: [false, false, false],
                 usedQuestions: { easy: [], medium: [], hard: [] },
                 cardLevels: [],
+                spyglassReveal: false,
+                spyglassLevel: null,
                 answered: false,
                 currentPlayerIndex: 0,
                 boardLayout: boardLayout,
@@ -2423,6 +2428,8 @@
                 usedCards: [false, false, false],
                 usedQuestions: { easy: [], medium: [], hard: [] },
                 cardLevels: [],
+                spyglassReveal: false,
+                spyglassLevel: null,
                 answered: false,
                 currentPlayerIndex: 0,
                 boardLayout: boardLayout,
@@ -2576,10 +2583,21 @@
             G.cardPicked = false;
             G.usedCards = [false, false, false];
             G.cardLevels = [];
+            G.spyglassReveal = false;
+            G.spyglassLevel = null;
             const slot = document.getElementById('mainCardSlot');
             slot.classList.remove('flipped', 'disabled');
             const back = document.getElementById('mainCardBack');
             back.innerHTML = '';
+            // Reset tampilan kartu depan
+            const front = slot.querySelector('.card-front');
+            const bigQ = front.querySelector('.big-q');
+            const lockIcon = front.querySelector('.lock-icon');
+            const hintText = front.querySelector('.hint-text');
+            lockIcon.textContent = '🔒';
+            bigQ.textContent = '?';
+            bigQ.style.color = '';
+            if (hintText) hintText.textContent = 'Tap to pick a card';
             document.getElementById('diceDisplay').textContent = '🎲 Pick a card!';
             // Sembunyikan notifikasi tile
             const el = document.getElementById('tileNotification');
@@ -2587,6 +2605,9 @@
             el.textContent = '';
         }
 
+        // ================================================================
+        //  SPYGLASS FIX - Complete pickCard function
+        // ================================================================
         function pickCard(index) {
             if (!gameActive || G.isFinished || G.gameOver) return;
             if (G.cardPicked) return;
@@ -2596,31 +2617,75 @@
             const cp = G.players[G.currentPlayerIndex];
             if (!cp) return;
 
+            // ============================================================
+            //  CEK SPYGLASS - TAMPILKAN LEVEL DI DEPAN KARTU
+            // ============================================================
             let reveal = false;
             if (cp.activeItems && cp.activeItems.spyglass) {
                 reveal = true;
-                cp.activeItems.spyglass = false;
-                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! Levels revealed!';
+                cp.activeItems.spyglass = false; // Habis dipakai
+                // Tampilkan notifikasi
+                showTileNotification('🔭 Spyglass active! Difficulty revealed on card!', 'mystery');
+                document.getElementById('diceDisplay').textContent = '🔭 Spyglass active! Card shows the difficulty!';
             }
 
+            // Tentukan level (acak atau reveal)
             const levels = ['easy', 'medium', 'hard'];
             let pickedLevel;
             if (reveal) {
-                const levelOrder = ['easy', 'medium', 'hard'];
-                const shuffled = [...levelOrder];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                G.cardLevels = shuffled;
-                document.getElementById('diceDisplay').textContent =
-                    `🔍 Levels: ${shuffled.map((l,i) => `Card ${i+1}: ${l.toUpperCase()}`).join(' | ')}`;
-                pickedLevel = shuffled[0];
+                // ============================================================
+                //  SPYGLASS: TAMPILKAN LEVEL DI DEPAN KARTU
+                // ============================================================
+                pickedLevel = levels[Math.floor(Math.random() * levels.length)];
+                G.cardLevels[0] = pickedLevel;
+                
+                // Ubah tampilan kartu depan menjadi level yang terungkap
+                const front = slot.querySelector('.card-front');
+                const bigQ = front.querySelector('.big-q');
+                const lockIcon = front.querySelector('.lock-icon');
+                const hintText = front.querySelector('.hint-text');
+                
+                lockIcon.textContent = '🔍';
+                bigQ.textContent = pickedLevel.toUpperCase();
+                bigQ.style.color = pickedLevel === 'easy' ? '#34d399' : 
+                                   pickedLevel === 'medium' ? '#fbbf24' : '#f87171';
+                if (hintText) hintText.textContent = 'Tap to reveal question';
+                
+                document.getElementById('diceDisplay').textContent = `🔍 Difficulty: ${pickedLevel.toUpperCase()}`;
+                
+                // Simpan state untuk tap kedua
+                G.spyglassReveal = true;
+                G.spyglassLevel = pickedLevel;
+                
+                document.getElementById('diceDisplay').textContent = '👆 Tap the card again to open!';
+                return; // Tunggu tap kedua
             } else {
                 pickedLevel = levels[Math.floor(Math.random() * levels.length)];
                 G.cardLevels[0] = pickedLevel;
             }
 
+            // ============================================================
+            //  CEK APAKAH INI TAP KEDUA (SETELAH SPYGLASS)
+            // ============================================================
+            if (G.spyglassReveal) {
+                pickedLevel = G.spyglassLevel || levels[Math.floor(Math.random() * levels.length)];
+                G.cardLevels[0] = pickedLevel;
+                G.spyglassReveal = false;
+                G.spyglassLevel = null;
+                // Reset tampilan kartu depan
+                const front = slot.querySelector('.card-front');
+                const bigQ = front.querySelector('.big-q');
+                const lockIcon = front.querySelector('.lock-icon');
+                const hintText = front.querySelector('.hint-text');
+                lockIcon.textContent = '🔒';
+                bigQ.textContent = '?';
+                bigQ.style.color = '';
+                if (hintText) hintText.textContent = 'Tap to pick a card';
+            }
+
+            // ============================================================
+            //  AMBIL SOAL DARI BANK
+            // ============================================================
             const major = currentUser ? currentUser.major : 'Computer Science';
             const pool = QUESTION_BANK[major];
             if (!pool) {
@@ -2633,7 +2698,6 @@
                 return;
             }
 
-            // Pastikan G.usedQuestions ada
             if (!G.usedQuestions) G.usedQuestions = { easy: [], medium: [], hard: [] };
             if (!G.usedQuestions[pickedLevel]) G.usedQuestions[pickedLevel] = [];
 
@@ -2647,7 +2711,6 @@
                 const originalIndex = levelPool.indexOf(qData);
                 G.usedQuestions[pickedLevel].push(originalIndex);
             } else {
-                // Reset jika semua soal sudah habis
                 G.usedQuestions[pickedLevel] = [];
                 qData = levelPool[Math.floor(Math.random() * levelPool.length)];
                 const originalIndex = levelPool.indexOf(qData);
